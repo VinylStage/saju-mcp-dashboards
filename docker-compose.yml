@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  saju-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: saju-mcp-dashboards:latest
+    container_name: saju-dashboard
+    restart: unless-stopped
+
+    # HTTP 서버 포트 매핑
+    ports:
+      - "3000:3000"
+
+    # 로컬 사용자 데이터를 컨테이너 재시작 후에도 유지
+    volumes:
+      - ./data:/app/data
+
+    # 환경 변수 (선택사항)
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+
+    # 리소스 제한
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+
+    # 헬스체크
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/data"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s

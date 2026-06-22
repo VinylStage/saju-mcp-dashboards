@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>개인용 사주 대시보드 - 프리미엄 명리학 분석기</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <link rel="stylesheet" href="/src/style.css">
+</head>
+<body>
+  <div class="bg-blur circle-1"></div>
+  <div class="bg-blur circle-2"></div>
+
+  <div id="app">
+    <!-- Input Form Screen -->
+    <div id="input-screen" class="screen active">
+      <div class="glass-card form-container fade-in">
+        <h1 class="title">운명의 흐름을 읽다</h1>
+        <p class="subtitle">개인용 프리미엄 사주 대시보드</p>
+        
+        <div class="history-panel fade-in" id="history-panel">
+          <h3>📂 최근 데이터 보관함</h3>
+          <div id="history-list" class="history-list">
+            <!-- Items will be injected by JS -->
+          </div>
+        </div>
+
+        <form id="saju-form">
+          <div class="form-group">
+            <label>이름</label>
+            <input type="text" id="input-name" placeholder="홍길동" required />
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>성별</label>
+              <div class="toggle-group">
+                <input type="radio" name="gender" id="gender-m" value="male" checked>
+                <label for="gender-m">남성</label>
+                <input type="radio" name="gender" id="gender-f" value="female">
+                <label for="gender-f">여성</label>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>달력</label>
+              <div class="toggle-group">
+                <input type="radio" name="calendar" id="cal-s" value="solar" checked>
+                <label for="cal-s">양력</label>
+                <input type="radio" name="calendar" id="cal-l" value="lunar">
+                <label for="cal-l">음력</label>
+              </div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>생년월일</label>
+              <input type="text" id="input-date" placeholder="0000년 00월 00일" onfocus="(this.type='date')" required />
+            </div>
+            <div class="form-group">
+              <label>태어난 시간 (명식 기준)</label>
+              <select id="input-time" required>
+                <option value="00:00">자시 (23:30 ~ 01:30)</option>
+                <option value="02:00">축시 (01:30 ~ 03:30)</option>
+                <option value="04:00">인시 (03:30 ~ 05:30)</option>
+                <option value="06:00">묘시 (05:30 ~ 07:30)</option>
+                <option value="08:00">진시 (07:30 ~ 09:30)</option>
+                <option value="10:00">사시 (09:30 ~ 11:30)</option>
+                <option value="12:00">오시 (11:30 ~ 13:30)</option>
+                <option value="14:00">미시 (13:30 ~ 15:30)</option>
+                <option value="16:00">신시 (15:30 ~ 17:30)</option>
+                <option value="18:00">유시 (17:30 ~ 19:30)</option>
+                <option value="20:00">술시 (19:30 ~ 21:30)</option>
+                <option value="22:00">해시 (21:30 ~ 23:30)</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>시작 연도</label>
+              <input type="number" id="input-start-year" value="2026" required />
+            </div>
+            <div class="form-group">
+              <label>종료 연도</label>
+              <input type="number" id="input-end-year" value="2036" required />
+            </div>
+          </div>
+          <button type="submit" class="btn-primary">사주 명식 및 운세 분석하기</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="screen">
+      <div class="loader"></div>
+      <p class="loading-text">천간과 지지의 에너지를 분석 중입니다...</p>
+    </div>
+
+    <!-- App Screen (Nav + Views) -->
+    <div id="app-screen" class="screen">
+      <nav class="glass-nav">
+        <h2 id="dash-title">사주 대시보드</h2>
+        <div class="nav-tabs">
+          <button class="nav-tab active" id="tab-dashboard" data-target="view-dashboard">📊 대시보드</button>
+          <button class="nav-tab" id="tab-manse" data-target="view-manse">🗓 만세력 상세</button>
+          <button class="nav-tab" id="btn-open-guide">💡 점수 가이드</button>
+        </div>
+        <button id="btn-back" class="btn-secondary">다시 분석</button>
+      </nav>
+
+      <div class="views-container fade-in-up">
+        
+        <!-- View: Dashboard -->
+        <div id="view-dashboard" class="view active">
+          <!-- Year Tabs -->
+          <div class="year-tabs" id="year-tabs"></div>
+
+          <!-- Chart Section -->
+          <section class="section-container glass-card">
+            <div class="chart-header">
+              <h3>월별 에너지 흐름 차트</h3>
+              <div class="legend-row">
+                <span class="legend-dot" style="background:#ef4444"></span>저점
+                <span class="legend-dot" style="background:#f59e0b"></span>보통
+                <span class="legend-dot" style="background:#10b981"></span>상승
+                <span class="legend-dot" style="background:#8b5cf6"></span>최고
+              </div>
+            </div>
+            <div class="chart-wrapper">
+              <canvas id="fortuneChart"></canvas>
+            </div>
+          </section>
+
+          <!-- Selectors & Detail -->
+          <div class="controls-row">
+            <div class="month-selectors">
+              <span>월 직접 선택:</span>
+              <select id="sel-year"></select>
+              <select id="sel-month"></select>
+            </div>
+          </div>
+
+          <section class="section-container glass-card detail-panel" id="detail-section">
+            <div class="panel-head">
+              <div>
+                <h3 id="detail-title" class="panel-month">2026년 6월</h3>
+                <div id="detail-subtitle" class="panel-ganji">경오월</div>
+              </div>
+              <div class="score-badge">
+                <div id="detail-score" class="score-num">5</div>
+                <div class="score-lbl">/ 10</div>
+              </div>
+            </div>
+            
+            <div id="detail-events" class="event-badges"></div>
+            <div id="detail-elements" class="elem-row"></div>
+            
+            <div class="divider"></div>
+            <div id="detail-content" class="detail-content"></div>
+
+            <div class="divider"></div>
+            <div class="event-form" style="margin-top: 1rem; margin-bottom: 1.5rem;">
+              <h4 style="font-size:0.9rem; margin-bottom:0.5rem; color:var(--text-main);">커스텀 이벤트 관리</h4>
+              <div style="display:flex; gap:0.5rem;">
+                <input type="text" id="input-event-label" placeholder="예: 무기력 MAX, 이직 성공" style="flex:1; padding:0.5rem; font-size:0.85rem;" />
+                <select id="input-event-color" style="width:100px; padding:0.5rem; font-size:0.85rem;">
+                  <option value="#8b5cf6">기본(보라)</option>
+                  <option value="#ef4444">나쁨(빨강)</option>
+                  <option value="#10b981">좋음(초록)</option>
+                  <option value="#f59e0b">주의(주황)</option>
+                </select>
+                <button id="btn-add-event" class="btn-secondary">추가</button>
+              </div>
+            </div>
+
+            <div class="panel-nav">
+              <button id="btn-prev-month" class="nav-btn">◀ 이전달</button>
+              <span id="nav-cur-label" class="nav-cur"></span>
+              <button id="btn-next-month" class="nav-btn">다음달 ▶</button>
+            </div>
+          </section>
+
+          <!-- Expansion Panel -->
+          <section class="section-container glass-card expansion-panel" style="margin-top: 1rem">
+            <h3>데이터 범위 연장 (추가 불러오기)</h3>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem">원하는 연월 범위를 입력하여 차트에 추가 병합합니다.</p>
+            <div class="form-row" style="align-items: flex-end;">
+              <div class="form-group">
+                <label>시작 연도</label>
+                <input type="number" id="expand-start-year" placeholder="예: 2037" />
+              </div>
+              <div class="form-group">
+                <label>종료 연도</label>
+                <input type="number" id="expand-end-year" placeholder="예: 2045" />
+              </div>
+              <button id="btn-expand" class="btn-secondary" style="margin-bottom: 4px;">추가 데이터 불러오기</button>
+            </div>
+          </section>
+        </div>
+
+        <!-- View: Manse (Detailed Saju) -->
+        <div id="view-manse" class="view">
+          <section class="section-container glass-card">
+            <div class="section-header">
+              <h3>명식 (사주팔자 원국)</h3>
+              <span class="badge" id="badge-daymaster">일간</span>
+            </div>
+            <div class="pillar-container" id="pillar-grid"></div>
+          </section>
+
+          <div class="grid-2">
+            <section class="section-container glass-card">
+              <h3>오행 분포</h3>
+              <div class="wuxing-grid" id="wuxing-grid"></div>
+            </section>
+            <section class="section-container glass-card">
+              <h3>십성 분포</h3>
+              <div class="tengoods-grid" id="tengoods-grid"></div>
+            </section>
+          </div>
+
+          <div class="grid-2">
+            <section class="section-container glass-card">
+              <h3>핵심 분석 & 격국</h3>
+              <div id="core-info" class="core-info-wrap"></div>
+            </section>
+            <section class="section-container glass-card">
+              <h3>용신 · 기신</h3>
+              <div id="yongsin-info" class="yongsin-info-wrap"></div>
+            </section>
+          </div>
+
+          <section class="section-container glass-card">
+            <h3>대운 흐름</h3>
+            <div class="daewoon-scroll">
+              <div class="daewoon-table" id="daewoon-table"></div>
+            </div>
+          </section>
+
+          <div class="grid-2">
+            <section class="section-container glass-card">
+              <h3>지지 관계 (합충파해)</h3>
+              <div id="branch-rel-info" class="rel-info-wrap"></div>
+            </section>
+            <section class="section-container glass-card">
+              <h3>신살</h3>
+              <div id="sinsal-info" class="sinsal-info-wrap"></div>
+            </section>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Score Guide Modal -->
+  <div id="modal-score" class="modal" style="display:none;">
+    <div class="modal-content glass-card">
+      <h3>💯 운세 점수(0~100) 산정 기준</h3>
+      <ul style="margin: 1rem 0; padding-left: 1.5rem; line-height: 1.6; font-size: 0.95rem;">
+        <li><strong>용신 매칭 (+20점):</strong> 해당 월의 천간/지지가 주용신 또는 부용신과 일치할 경우</li>
+        <li><strong>일간 상호작용 (±15점):</strong> 생(生)하거나 도움을 받는 상생 구조일 경우 가산, 극(剋)하거나 충돌할 경우 감산</li>
+        <li><strong>길흉일 비율 (±15점):</strong> 행운의 날(Lucky Days)과 주의할 날(Caution Days)의 비율에 따른 상대 점수</li>
+        <li><strong>종합 운세 분석 (±10점):</strong> 전반적인 운세의 길흉화복에 따른 추가 가중치</li>
+      </ul>
+      <p style="font-size: 0.85rem; color: var(--text-muted);">※ 각 명식에 대한 상세 설명은 추후 별도 페이지에 추가될 예정입니다. (TODO)</p>
+      <button id="btn-close-modal" class="btn-primary" style="margin-top: 1.5rem; width: 100%;">닫기</button>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

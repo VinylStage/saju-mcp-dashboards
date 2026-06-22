@@ -1,0 +1,49 @@
+# 의존성 (Dependencies)
+node_modules/
+
+# Yarn v2+ (Zero-installs 미사용)
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+# 빌드 및 캐시 출력 (Build & Cache)
+dist/
+build/
+*.tsbuildinfo
+.cache/
+
+# 환경 변수 (Environment)
+.env
+.env.local
+.env.*.local
+
+# 로그 및 디버깅 (Logs & Debugging)
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE 및 에디터 (Editors)
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+
+# 운영 체제 (OS Files)
+.DS_Store
+Thumbs.db
+
+# 개인 데이터 및 앱 특정 폴더 (Personal Data - Git 추적 절대 금지)
+/data/
+*.local.json
+*_raw.json

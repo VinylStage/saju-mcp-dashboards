@@ -1,0 +1,39 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["src/index.ts"],
+  "out": "docs/api",
+  "plugin": [],
+  "name": "사주 MCP 서버 API",
+  "includeVersion": true,
+  "readme": "README.md",
+  "theme": "default",
+  "navigationLinks": {
+    "GitHub": "https://github.com/VinylStage/saju-mcp-dashboards"
+  },
+  "categorizeByGroup": true,
+  "defaultCategory": "Other",
+  "categoryOrder": [
+    "Tools",
+    "Core",
+    "Data",
+    "Types",
+    "*"
+  ],
+  "sort": ["source-order"],
+  "exclude": [
+    "**/__tests__/**",
+    "**/*.test.ts",
+    "**/*.spec.ts"
+  ],
+  "excludePrivate": true,
+  "excludeProtected": false,
+  "excludeInternal": false,
+  "validation": {
+    "notExported": true,
+    "invalidLink": true,
+    "notDocumented": false
+  },
+  "treatWarningsAsErrors": false,
+  "githubPages": true,
+  "hideGenerator": false
+}
