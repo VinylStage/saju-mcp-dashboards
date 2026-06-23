@@ -50,6 +50,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // Nav buttons
   document.getElementById('btn-prev-month')?.addEventListener('click', navigateMonth.bind(null, -1));
   document.getElementById('btn-next-month')?.addEventListener('click', navigateMonth.bind(null, 1));
+  
+  document.getElementById('btn-home')?.addEventListener('click', () => {
+    window.location.hash = '';
+  });
+  
   document.getElementById('btn-back')?.addEventListener('click', () => {
     document.getElementById('app-screen')!.classList.remove('active');
     document.getElementById('input-screen')!.classList.add('active');
@@ -72,8 +77,32 @@ document.addEventListener('DOMContentLoaded', () => {
   // Custom Events
   document.getElementById('btn-add-event')?.addEventListener('click', handleAddCustomEvent);
 
-  loadHistoryList();
+  // Initialize Routing
+  window.addEventListener('hashchange', handleRoute);
+  
+  // Start up
+  handleRoute();
 });
+
+function handleRoute() {
+  const hash = window.location.hash;
+  if (!hash || hash === '#' || hash === '#/') {
+    // Show input screen
+    document.getElementById('app-screen')!.classList.remove('active');
+    document.getElementById('input-screen')!.classList.add('active');
+    loadHistoryList();
+  } else if (hash.startsWith('#/dashboard/')) {
+    const id = hash.split('#/dashboard/')[1];
+    if (id && id !== currentFileId) {
+      (window as any).loadSavedData(id);
+    } else {
+      // If same id, just show the screen
+      document.getElementById('input-screen')!.classList.remove('active');
+      document.getElementById('loading-screen')!.classList.remove('active');
+      document.getElementById('app-screen')!.classList.add('active');
+    }
+  }
+}
 
 async function loadHistoryList() {
   try {
@@ -88,7 +117,7 @@ async function loadHistoryList() {
 
     container.innerHTML = list.map((item: any) => `
       <div class="history-item">
-        <div class="history-info" onclick="loadSavedData('${item.id}')">
+        <div class="history-info" onclick="window.location.hash = '#/dashboard/${item.id}'">
           <div class="history-title">${item.meta.name} (${item.meta.gender === 'male' ? '남' : '여'})</div>
           <div class="history-sub">${item.meta.birth} | 일주: ${item.meta.ilju || ''}</div>
         </div>
@@ -206,14 +235,15 @@ async function handleFormSubmit(e: Event) {
     const saveJson = await saveRes.json();
     if (saveJson.success) {
       currentFileId = saveJson.id;
+      // Change hash to dashboard to keep state
+      window.location.hash = '#/dashboard/' + currentFileId;
+    } else {
+      document.getElementById('loading-screen')!.classList.remove('active');
+      document.getElementById('app-screen')!.classList.add('active');
+      renderManseDetails();
+      renderDashboard();
     }
-
-    document.getElementById('loading-screen')!.classList.remove('active');
-    document.getElementById('app-screen')!.classList.add('active');
-
-    renderManseDetails();
-    renderDashboard();
-
+    
   } catch (error) {
     console.error(error);
     alert('사주 연산 중 오류가 발생했습니다.');
