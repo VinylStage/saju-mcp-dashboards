@@ -164,8 +164,13 @@ async function handleFormSubmit(e: Event) {
   const calendar = (document.querySelector('input[name="calendar"]:checked') as HTMLInputElement).value as CalendarType;
   const dateStr = (document.getElementById('input-date') as HTMLInputElement).value;
   const timeStr = (document.getElementById('input-time') as HTMLInputElement).value;
-  const startYear = parseInt((document.getElementById('input-start-year') as HTMLInputElement).value) || 2026;
-  const endYear = parseInt((document.getElementById('input-end-year') as HTMLInputElement).value) || 2036;
+  const birthYear = parseInt(dateStr.split('-')[0]) || 2000;
+  
+  let startYear = parseInt((document.getElementById('input-start-year') as HTMLInputElement).value) || 2026;
+  if (startYear < birthYear) startYear = birthYear;
+  
+  let endYear = parseInt((document.getElementById('input-end-year') as HTMLInputElement).value) || Math.max(startYear + 10, 2036);
+  if (endYear < startYear) endYear = startYear;
 
   // Simulate minimal loading for UX
   await new Promise(r => setTimeout(r, 600));
@@ -221,9 +226,14 @@ function generateTimeline(startYear: number, endYear: number) {
   monthlyDataList = [];
   allKeys = [];
   
+  const birthYear = parseInt(currentSajuData!.birthDate.split('-')[0]) || 2000;
+  const birthMonth = parseInt(currentSajuData!.birthDate.split('-')[1]) || 1;
+  
   for (let year = startYear; year <= endYear; year++) {
     const seUn = analyzeSeUn(currentSajuData!, year);
     for (let month = 1; month <= 12; month++) {
+      if (year === birthYear && month < birthMonth) continue;
+      
       const wolUn = analyzeWolUn(currentSajuData!, year, month, seUn.stem);
       const key = `${year}-${String(month).padStart(2, '0')}`;
       
@@ -246,9 +256,16 @@ function generateTimeline(startYear: number, endYear: number) {
 }
 
 async function handleExpandData() {
-  const sy = parseInt((document.getElementById('expand-start-year') as HTMLInputElement).value);
-  const ey = parseInt((document.getElementById('expand-end-year') as HTMLInputElement).value);
-  if (!sy || !ey || sy > ey) return alert('올바른 연도를 입력하세요.');
+  const birthYear = parseInt(currentProfile.birth.split('-')[0]) || 2000;
+  let sy = parseInt((document.getElementById('expand-start-year') as HTMLInputElement).value);
+  let ey = parseInt((document.getElementById('expand-end-year') as HTMLInputElement).value);
+  
+  if (!sy || !ey) return alert('올바른 연도를 입력하세요.');
+  if (sy < birthYear) {
+    alert(`탄생 연도(${birthYear}년) 이전의 데이터는 로드할 수 없습니다.`);
+    sy = birthYear;
+  }
+  if (sy > ey) return alert('시작 연도가 종료 연도보다 클 수 없습니다.');
 
   document.getElementById('btn-expand')!.textContent = '분석 중...';
   
@@ -256,9 +273,13 @@ async function handleExpandData() {
   const yongSinElements = [currentYongsin.primaryYongSin];
   if (currentYongsin.secondaryYongSin) yongSinElements.push(currentYongsin.secondaryYongSin);
 
+  const birthMonth = parseInt(currentProfile.birth.split('-')[1]) || 1;
+
   for (let year = sy; year <= ey; year++) {
     const seUn = analyzeSeUn(currentSajuData!, year);
     for (let month = 1; month <= 12; month++) {
+      if (year === birthYear && month < birthMonth) continue;
+      
       const key = `${year}-${String(month).padStart(2, '0')}`;
       if (monthlyDataList.find(d => d.key === key)) continue;
 

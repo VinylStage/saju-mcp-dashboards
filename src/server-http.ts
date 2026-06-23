@@ -71,10 +71,25 @@ const httpServer = http.createServer(async (req, res) => {
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR);
 
   if (req.url?.startsWith('/api/data')) {
-    const id = req.url.split('/')[3]; // e.g., /api/data/filename.json -> filename.json
+    console.log(`[API] ${req.method} ${req.url}`);
+    const urlParts = (req.url || '').split('?');
+    const pathPart = urlParts[0] || '';
+    const id = decodeURIComponent(pathPart.split('/')[3] || '');
     
     if (req.method === 'GET') {
-      res.writeHead(200, { 'Content-Type': 'application/json' });
+      if (id) {
+        try {
+          const content = JSON.parse(fs.readFileSync(path.join(DATA_DIR, id), 'utf-8'));
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(content));
+        } catch (e: any) {
+          console.error(`[API Error] Failed to read ${id}: ${e.message}`);
+          res.writeHead(404, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'File not found' }));
+        }
+        return;
+      }
+      
       const files = fs.readdirSync(DATA_DIR).filter(f => f.endsWith('.json'));
       const list = files.map(file => {
         try {
@@ -84,6 +99,7 @@ const httpServer = http.createServer(async (req, res) => {
           return null;
         }
       }).filter(Boolean);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(list));
       return;
     }
