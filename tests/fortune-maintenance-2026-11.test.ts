@@ -122,3 +122,47 @@ describe('B3 get_daily_fortune: luckyColor/advice가 용신과 모순되지 않�
     expect(f.advice).toContain(yong);
   });
 });
+
+describe('B5 get_daily_fortune 점수: 일진·용신·원국 관계 기반 결정적 산식', () => {
+  // 용신 토, 희신 금 → 기신 목(극토)·화(극금)
+  test('2026-11-09 丁亥: 천간 화(기신 -8), 지지 수(0), 관계 寅亥합+4 亥亥복음-3 亥亥형-5 巳亥충-8', () => {
+    const f = getDailyFortune(saju, '2026-11-09');
+    expect(f.overallLuck).toBe(40);
+    expect(f.wealthLuck).toBe(34); // 비견 -6
+    expect(f.careerLuck).toBe(40);
+    expect(f.healthLuck).toBe(32); // 충·형 2건 × -4
+    expect(f.loveLuck).toBe(44); // 육합 1건 +4
+    expect(f.scoreBreakdown.tenGod).toBe('비견');
+    expect(f.scoreBreakdown.relations).toBe(-12);
+  });
+
+  test('2026-11-12 庚寅: 천간 금(희신 +6), 지지 목(기신 -5), 관계 寅寅복음-3 寅亥합+4 寅巳형-5', () => {
+    const f = getDailyFortune(saju, '2026-11-12');
+    expect(f.overallLuck).toBe(57);
+    expect(f.wealthLuck).toBe(65); // 정재 +8
+    expect(f.careerLuck).toBe(57);
+    expect(f.healthLuck).toBe(53);
+    expect(f.loveLuck).toBe(69); // 남성 재성 +8, 육합 +4
+    expect(f.scoreBreakdown.tenGod).toBe('정재');
+  });
+
+  test('같은 일진(60일 간격)이면 날짜·월과 무관하게 같은 점수', () => {
+    const a = getDailyFortune(saju, '2026-11-09');
+    const b = getDailyFortune(saju, '2027-01-08');
+    expect(b.scoreBreakdown.ilJin).toBe('정해');
+    expect([b.overallLuck, b.wealthLuck, b.careerLuck, b.healthLuck, b.loveLuck]).toEqual([
+      a.overallLuck, a.wealthLuck, a.careerLuck, a.healthLuck, a.loveLuck,
+    ]);
+  });
+
+  test('모든 점수는 30~100 정수', () => {
+    for (let d = 1; d <= 30; d++) {
+      const f = getDailyFortune(saju, `2026-11-${String(d).padStart(2, '0')}`);
+      for (const v of [f.overallLuck, f.wealthLuck, f.careerLuck, f.healthLuck, f.loveLuck]) {
+        expect(Number.isInteger(v)).toBe(true);
+        expect(v).toBeGreaterThanOrEqual(30);
+        expect(v).toBeLessThanOrEqual(100);
+      }
+    }
+  });
+});

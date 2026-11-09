@@ -264,7 +264,7 @@ function calculateConstellation(date: Date): IljinAnalysis['constellation'] {
 /**
  * 사주와의 관계 분석
  */
-function analyzeRelationWithSaju(
+export function analyzeRelationWithSaju(
   _dayStem: HeavenlyStem,
   dayBranch: EarthlyBranch,
   saju: SajuData

@@ -254,6 +254,15 @@ export interface DailyFortune {
   luckyColor: string;
   luckyDirection: string;
   advice: string;
+  scoreBreakdown: {
+    ilJin: string; // 일진 간지 (예: "정해")
+    tenGod: TenGod; // 일간 대비 일진 천간 십성
+    base: number;
+    stemElement: number; // 일진 천간 오행 vs 용신/희신/기신
+    branchElement: number; // 일진 지지 오행 vs 용신/희신/기신
+    relations: number; // 원국 4지지와 육합·충·형·복음 합계
+    items: string[]; // 가감 근거
+  };
 }
 
 // 음양력 변환 결과

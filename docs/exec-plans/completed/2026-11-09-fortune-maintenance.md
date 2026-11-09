@@ -13,6 +13,41 @@
 | B3 | `src/lib/fortune.ts` | `luckyColor`/`advice`가 원국 일간 오행(날짜 무관) 기반 → 기신 색 추천 | 용신 오행 기반 색·방위, advice에 당일 일진과 용신 명시 |
 | B4 | `src/lib/wol_un.ts` | 길일 5의 배수, 주의일 7의 배수 고정 | 당월 각 날짜 일진 지지 vs 원국 일지: 육합·삼합=길일, 충=주의일 |
 
+## B5 일운 점수 재설계 (`src/lib/fortune.ts` getDailyFortune)
+
+기존: `overallLuck = 70 + ((일+월)%20 - 10)`, 하위 항목은 `Math.sin` 시드 난수 가산. 사주·일진과 무관하여 11/2~11/8 73→79, 11/9 60의 톱니 패턴 발생.
+
+신규 (결정적, 같은 일진이면 같은 점수):
+
+```
+overall = 60 + stemElement + branchElement + relations   (clamp 30..100)
+```
+
+| 항목 | 용신 | 희신 | 기신 |
+|------|------|------|------|
+| 일진 천간 오행 | +10 | +6 | -8 |
+| 일진 지지 오행 | +6 | +4 | -5 |
+
+- 용신·희신: `sajuData.yongSin.primaryYongSin/secondaryYongSin` (strength 방법)
+- 기신: 용신 또는 희신을 극하는 오행
+- relations: 원국 연·월·일·시지 각각과 육합 +4, 충 -8, 형 -5, 복음 -3 (B2 `analyzeRelationWithSaju` 재사용, 누적)
+  - 辰午酉亥 같은 지지는 복음(-3)과 자형(-5)이 함께 적용. 寅申·巳申처럼 충/육합과 형이 겹치는 쌍도 각각 적용
+
+하위 항목 = overall + 일진 천간 십성 보정 (clamp 30..100):
+
+| 항목 | 보정 |
+|------|------|
+| wealth | 재성 +8, 식상 +4, 비겁 -6 |
+| career | 관성 +8, 인성 +4, 상관 -6 |
+| health | 인성 +4, 충·형 1건당 -4 |
+| love | 배우자성(남 재성/여 관성) +8, 육합 1건당 +4, 일지 충 -6 |
+
+응답에 `scoreBreakdown { ilJin, tenGod, base, stemElement, branchElement, relations, items[] }` 추가.
+
+가중치는 명리 전통의 정량 기준이 없어 임의 설정한 값이다 (상대 크기만 의미: 용신 > 희신, 충 > 형 > 복음). 조정 시 `DAILY_WEIGHTS` 상수와 이 문서를 함께 수정.
+
+고정 입력 2026-11 결과 예: 11/3 辛巳 45, 11/6 甲申 42, 11/9 丁亥 40, 11/11 己丑 76.
+
 ## 응답 스키마 변경 (추가만, 제거 없음)
 
 - `WolUnMonth`: `termStart`, `termEnd`, `beforeTermGanjiName` 추가. `solarTerm`은 이제 해당 양력 월의 절(節)
@@ -23,11 +58,10 @@
 
 | ID | 내용 | 사유 |
 |----|------|------|
-| B5 | `getDailyFortune` 점수 = `70 + ((일+월)%20 - 10)` + 시드 난수. 사주·일진 무관. 11/2~11/8 73→79, 11/9 60 톱니 패턴의 직접 원인 | 점수 산식 재설계 필요 (사용자 승인 대기) |
 | B6 | 용신 strength/seasonal 방법 간 불일치, 통합 요약 없음 | 해석 정책 결정 필요 |
 | B7 | `get_dae_un` 대운 시작 일자 미제공. `startAge`는 3일=1년 내림 정수 | 시작 일자 환산 규칙(내림 vs 월 단위) 결정 필요 |
 | B8 | 해외 출생(lat/lon/tz) 미지원 | 입력 스키마 변경 |
-| B9 | hour `score`(일진 십이신·28수 기반)와 daily `overallLuck`(B5 산식) 별개 산식 | B5와 함께 처리 |
+| B9 | hour `score`(십이신·28수 기반)와 daily `overallLuck`(B5 산식)은 여전히 별개 산식 | 통합 여부 결정 필요. 차이는 아래 B5 절에 문서화 |
 | B10 | 기본 프로필 저장 방식 | `manage_settings` 범위 확인 필요 |
 
 ## 별도 발견
@@ -38,7 +72,7 @@
 
 ## 검증
 
-- `TZ=Asia/Seoul npx jest`: 140/140 통과
+- `TZ=Asia/Seoul npx jest`: 149/149 통과 (B5 포함)
 - 신규 테스트 UTC, America/Los_Angeles에서도 통과
 - `npx eslint src`: 0 errors (기존 warning 5건 동일)
 - `npx tsc --noEmit`: 통과
