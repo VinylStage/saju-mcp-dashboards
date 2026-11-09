@@ -254,6 +254,7 @@ export interface DailyFortune {
   luckyColor: string;
   luckyDirection: string;
   advice: string;
+  grade: '◎' | '○' | '△' | '×'; // overallLuck 등급: ≥72 ◎, ≥64 ○, ≥52 △, 그 외 ×
   scoreBreakdown: {
     ilJin: string; // 일진 간지 (예: "정해")
     tenGod: TenGod; // 일간 대비 일진 천간 십성

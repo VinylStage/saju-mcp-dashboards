@@ -19,6 +19,7 @@ import {
   TIME_RANGES,
 } from './constants.js';
 import { getDayPillar } from './helpers.js';
+import { getPreviousJieSolarTermByInstant } from '../data/solar_terms.js';
 
 /**
  * 일진 분석 결과
@@ -202,9 +203,8 @@ function calculateTwelveGods(
   date: Date,
   dayBranch: EarthlyBranch
 ): IljinAnalysis['twelveGods'] {
-  // 월지 기준으로 십이신 결정 (간단화)
-  const month = date.getMonth(); // 0-11
-  const monthBranchIndex = (month + 2) % 12; // 1월=인월
+  // 절기 월건 기준 (절입 이후 월지)
+  const monthBranchIndex = getJieMonthBranchIndex(date);
   const dayBranchIndex = EARTHLY_BRANCHES.indexOf(dayBranch);
 
   const godIndex = (dayBranchIndex - monthBranchIndex + 12) % 12;
@@ -217,6 +217,19 @@ function calculateTwelveGods(
     description: info.desc,
     isAuspicious: info.lucky,
   };
+}
+
+const JIE_TO_BRANCH_INDEX: Record<string, number> = {
+  입춘: 2, 경칩: 3, 청명: 4, 입하: 5, 망종: 6, 소서: 7,
+  입추: 8, 백로: 9, 한로: 10, 입동: 11, 대설: 0, 소한: 1,
+};
+
+function getJieMonthBranchIndex(date: Date): number {
+  const jie = getPreviousJieSolarTermByInstant(date);
+  if (!jie) {
+    throw new Error('절기 데이터를 찾을 수 없습니다. 지원 범위: 1900-2200년');
+  }
+  return JIE_TO_BRANCH_INDEX[jie.term]!;
 }
 
 /**

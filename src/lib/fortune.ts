@@ -641,6 +641,14 @@ const DAILY_WEIGHTS = {
   relation: { 육합: 4, 충: -8, 형: -5, 복음: -3 },
 } as const;
 
+/** 일운 등급 임계값 — 근거: docs/references/scoring.md */
+function gradeOf(overall: number): DailyFortune['grade'] {
+  if (overall >= 72) return '◎';
+  if (overall >= 64) return '○';
+  if (overall >= 52) return '△';
+  return '×';
+}
+
 function clampLuck(v: number): number {
   return Math.round(Math.min(100, Math.max(30, v)));
 }
@@ -701,6 +709,7 @@ export function getDailyFortune(sajuData: SajuData, date: string): DailyFortune 
 
   return {
     date,
+    grade: gradeOf(clampLuck(overall)),
     overallLuck: clampLuck(overall),
     wealthLuck: clampLuck(wealth),
     careerLuck: clampLuck(career),
