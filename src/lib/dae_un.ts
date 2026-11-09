@@ -9,6 +9,8 @@ import { getEarthlyBranchByIndex } from '../data/earthly_branches.js';
 import { getNextJieSolarTermByInstant, getPreviousJieSolarTermByInstant } from '../data/solar_terms.js';
 import { daeUnCache, generateDaeUnCacheKey } from './performance_cache.js';
 import { getAdjustedBirthInstantForSaju } from '../utils/date.js';
+import { addYears } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
 
 export interface DaeUnPeriod {
   startAge: number;
@@ -18,6 +20,7 @@ export interface DaeUnPeriod {
   stemElement: WuXing;
   branchElement: WuXing;
   pillarIndex: number; // 몇 번째 대운인지 (0부터 시작)
+  startDate: string; // 대운 시작 일자 (KST, YYYY-MM-DD). 절기까지 경과일 ÷ 3 = 년 (연속 환산)
 }
 
 /**
@@ -44,7 +47,7 @@ export function calculateDaeUn(
   const daeUnPeriods: DaeUnPeriod[] = [];
 
   // 1. 대운 시작 나이 계산 (간단화: 남자 양년생/여자 음년생은 순행, 그 외는 역행)
-  const startAge = calculateDaeUnStartAge(sajuData);
+  const { startAge, firstStart } = calculateDaeUnStart(sajuData);
 
   // 2. 대운 순행/역행 결정
   const isForward = isDaeUnForward(sajuData);
@@ -81,6 +84,7 @@ export function calculateDaeUn(
       stemElement: stem.element,
       branchElement: branch.element,
       pillarIndex: i,
+      startDate: formatInTimeZone(addYears(firstStart, i * 10), 'Asia/Seoul', 'yyyy-MM-dd'),
     });
   }
 
@@ -119,14 +123,27 @@ export function getDaeUnAtAge(
  * 
  * 출처: 명리정종, 적천수 등 전통 명리서
  */
-function calculateDaeUnStartAge(sajuData: SajuData): number {
-  // 만세력 기준: 출생일시를 정확히 반영 (대한민국 벽시계·썸머타임 반영)
-  const birthDate = getAdjustedBirthInstantForSaju(
+const MS_PER_DAY = 1000 * 60 * 60 * 24;
+const DAYS_PER_YEAR = 365.2425;
+
+/**
+ * 대운 시작: startAge(3일=1년 내림, 기존 규칙)와 첫 대운 시작 시각(경과일/3 년 연속 환산)
+ */
+function calculateDaeUnStart(sajuData: SajuData): { startAge: number; firstStart: Date } {
+  const birth = getAdjustedBirthInstantForSaju(
     sajuData.birthDate,
     sajuData.birthTime,
     sajuData.birthCity
   );
-  
+  const totalDays = calculateDaeUnStartDays(sajuData, birth);
+  return {
+    startAge: daeUnStartAgeFromThreeDayRule(totalDays),
+    firstStart: new Date(birth.getTime() + (totalDays / 3) * DAYS_PER_YEAR * MS_PER_DAY),
+  };
+}
+
+/** 출생 시각과 기산 절(節) 사이 경과 일수. 절기 데이터 없으면 15일(=5세) */
+function calculateDaeUnStartDays(sajuData: SajuData, birthDate: Date): number {
   const isForward = isDaeUnForward(sajuData);
 
   let targetSolarTerm;
@@ -137,28 +154,24 @@ function calculateDaeUnStartAge(sajuData: SajuData): number {
 
     if (!targetSolarTerm) {
       console.warn('다음 절기 데이터를 찾을 수 없습니다. 기본값 5세를 사용합니다.');
-      return 5;
+      return 15;
     }
 
     const termDate = new Date(targetSolarTerm.datetime);
     // 순행: 다음 절(節)까지 경과 일수 → 3일 = 1년(세는 정수, 내림). 시·분을 개월로 넣어 반올림하면 표준 만세력과 어긋남.
-    const timeDifference = termDate.getTime() - birthDate.getTime();
-    const totalDays = timeDifference / (1000 * 60 * 60 * 24);
-    return daeUnStartAgeFromThreeDayRule(totalDays);
+    return (termDate.getTime() - birthDate.getTime()) / MS_PER_DAY;
   } else {
     // 역행: 출생 전 이전 절기까지
     targetSolarTerm = getPreviousJieSolarTermByInstant(birthDate);
 
     if (!targetSolarTerm) {
       console.warn('이전 절기 데이터를 찾을 수 없습니다. 기본값 5세를 사용합니다.');
-      return 5;
+      return 15;
     }
 
     const termDate = new Date(targetSolarTerm.datetime);
     // 역행: 이전 절(節)부터 출생까지 경과 일수 → 3일 = 1년(내림)
-    const timeDifference = birthDate.getTime() - termDate.getTime();
-    const totalDays = timeDifference / (1000 * 60 * 60 * 24);
-    return daeUnStartAgeFromThreeDayRule(totalDays);
+    return (birthDate.getTime() - termDate.getTime()) / MS_PER_DAY;
   }
 }
 
@@ -222,7 +235,7 @@ function getEarthlyBranchIndex(branch: EarthlyBranch): number {
  * 대운 포맷팅
  */
 export function formatDaeUn(daeUn: DaeUnPeriod): string {
-  return `${daeUn.startAge}-${daeUn.endAge}세: ${daeUn.stem}${daeUn.branch} (${daeUn.stemElement}/${daeUn.branchElement})`;
+  return `${daeUn.startAge}-${daeUn.endAge}세 (${daeUn.startDate}~): ${daeUn.stem}${daeUn.branch} (${daeUn.stemElement}/${daeUn.branchElement})`;
 }
 
 /**
