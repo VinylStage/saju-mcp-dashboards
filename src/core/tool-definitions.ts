@@ -13,7 +13,7 @@ const toolSchemaFactories: Record<string, () => Tool> = {
   analyze_saju: () => ({
     name: 'analyze_saju',
     description:
-      '사주 분석 통합 (basic/fortune/yongsin/school_compare/yongsin_method). 호출 전 사용자에게 이름(한글)·한자(선택)·양력/음력·생년월일시·윤달(음력 시)·성별·태어난 시군구를 확인할 것. 대화형 상세 해석 문장은 docs/references/interpretation-guide.md의 6항목 구조를 따른다.',
+      '사주 분석 통합 (basic/fortune/yongsin/school_compare/yongsin_method). 출생 정보 생략 시 manage_settings로 저장한 프로필 사용. 프로필이 없고 이 대화에서 처음 조회할 때만 이름(한글)·한자(선택)·양력/음력·생년월일시·윤달(음력 시)·성별·태어난 시군구를 확인할 것. 대화형 상세 해석 문장은 docs/references/interpretation-guide.md의 6항목 구조를 따른다.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -48,7 +48,7 @@ const toolSchemaFactories: Record<string, () => Tool> = {
           description: 'yongsin_method용 (strength/seasonal/mediation/disease)',
         },
       },
-      required: ['birthDate', 'birthTime', 'gender', 'analysisType'],
+      required: ['analysisType'],
     },
   }),
 
@@ -112,7 +112,7 @@ const toolSchemaFactories: Record<string, () => Tool> = {
   get_daily_fortune: () => ({
     name: 'get_daily_fortune',
     description:
-      '일일 운세. 호출 전 사용자에게 이름(한글)·한자(선택)·양력/음력·생년월일시·성별·출생 시군구를 확인할 것.',
+      '일일 운세. 출생 정보 생략 시 manage_settings로 저장한 프로필 사용. 프로필이 없고 이 대화에서 처음 조회할 때만 이름(한글)·한자(선택)·양력/음력·생년월일시·성별·출생 시군구를 확인할 것.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -127,14 +127,14 @@ const toolSchemaFactories: Record<string, () => Tool> = {
         gender: { type: 'string', enum: ['male', 'female'] },
         targetDate: { type: 'string', description: 'YYYY-MM-DD' },
       },
-      required: ['birthDate', 'birthTime', 'gender', 'targetDate'],
+      required: ['targetDate'],
     },
   }),
 
   get_dae_un: () => ({
     name: 'get_dae_un',
     description:
-      '10년 대운 (나이는 만 나이 기준, targetYear는 해당 양력 연도 말일 기준 만 나이로 구간 조회). 호출 전 사용자에게 이름(한글)·한자(선택)·양력/음력·생년월일시·성별·출생 시군구를 확인할 것.',
+      '10년 대운 (나이는 만 나이 기준, targetYear는 해당 양력 연도 말일 기준 만 나이로 구간 조회). 출생 정보 생략 시 manage_settings로 저장한 프로필 사용. 프로필이 없고 이 대화에서 처음 조회할 때만 이름(한글)·한자(선택)·양력/음력·생년월일시·성별·출생 시군구를 확인할 것.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -154,14 +154,14 @@ const toolSchemaFactories: Record<string, () => Tool> = {
         },
         limit: { type: 'number', default: 10, description: '표시할 대운 개수 상한' },
       },
-      required: ['birthDate', 'birthTime', 'gender'],
+      required: [],
     },
   }),
 
   get_fortune_by_period: () => ({
     name: 'get_fortune_by_period',
     description:
-      '시간대별 운세 (year/month/hour/multi-year). 호출 전 사용자에게 이름(한글)·한자(선택)·양력/음력·생년월일시·성별·출생 시군구를 확인할 것.',
+      '시간대별 운세 (year/month/hour/multi-year). 출생 정보 생략 시 manage_settings로 저장한 프로필 사용. 프로필이 없고 이 대화에서 처음 조회할 때만 이름(한글)·한자(선택)·양력/음력·생년월일시·성별·출생 시군구를 확인할 것.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -182,17 +182,32 @@ const toolSchemaFactories: Record<string, () => Tool> = {
         target: { type: 'string', description: '기간 (periodType에 맞는 형식)' },
         count: { type: 'number', default: 5, description: 'multi-year용' },
       },
-      required: ['birthDate', 'birthTime', 'gender', 'periodType'],
+      required: ['periodType'],
     },
   }),
 
   manage_settings: () => ({
     name: 'manage_settings',
-    description: '해석 설정 관리 (get/set)',
+    description:
+      '해석 설정(get/set) 및 기본 출생 프로필 관리(set_profile/get_profile/clear_profile). 프로필은 서버 프로세스 메모리에만 저장되며 재시작 시 사라짐',
     inputSchema: {
       type: 'object',
       properties: {
-        action: { type: 'string', enum: ['get', 'set'] },
+        action: { type: 'string', enum: ['get', 'set', 'set_profile', 'get_profile', 'clear_profile'] },
+        profile: {
+          type: 'object',
+          description: 'set_profile용 기본 출생 프로필',
+          properties: {
+            name: { type: 'string' },
+            birthDate: { type: 'string', description: 'YYYY-MM-DD' },
+            birthTime: { type: 'string', description: 'HH:mm' },
+            birthCity: { type: 'string' },
+            calendar: { type: 'string', enum: ['solar', 'lunar'] },
+            isLeapMonth: { type: 'boolean' },
+            gender: { type: 'string', enum: ['male', 'female'] },
+          },
+          required: ['birthDate', 'birthTime', 'gender'],
+        },
         preset: { type: 'string', enum: ['ziping', 'dts', 'qtbj', 'modern', 'shensha', 'balanced'] },
         custom: {
           type: 'object',

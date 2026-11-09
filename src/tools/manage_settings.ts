@@ -4,8 +4,9 @@
  */
 
 import { InterpretationSettings } from '../lib/interpretation_settings.js';
+import { setProfile, getProfile, clearProfile, type BirthProfile } from '../lib/profile.js';
 
-export type SettingsAction = 'get' | 'set';
+export type SettingsAction = 'get' | 'set' | 'set_profile' | 'get_profile' | 'clear_profile';
 
 export interface ManageSettingsArgs {
   action: SettingsAction;
@@ -19,13 +20,29 @@ export interface ManageSettingsArgs {
     modern?: number;
     shensha?: number;
   };
+
+  // set_profile용
+  profile?: BirthProfile;
 }
 
 export function handleManageSettings(args: ManageSettingsArgs): string {
-  const { action, preset } = args;
+  const { action, preset, profile } = args;
   const settings = InterpretationSettings.getInstance();
 
   switch (action) {
+    case 'set_profile':
+      if (!profile) {
+        throw new Error('set_profile 시 profile 필수 (birthDate, birthTime, gender)');
+      }
+      return JSON.stringify(setProfile(profile));
+
+    case 'get_profile':
+      return JSON.stringify(getProfile());
+
+    case 'clear_profile':
+      clearProfile();
+      return JSON.stringify(null);
+
     case 'get':
       return JSON.stringify(settings.getSettings());
 
