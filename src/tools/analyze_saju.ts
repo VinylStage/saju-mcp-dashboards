@@ -9,7 +9,7 @@ import { calculateSaju } from '../lib/saju.js';
 import { analyzeFortune } from '../lib/fortune.js';
 import { selectYongSin as selectYongSinOrig } from '../lib/yong_sin.js';
 import { SchoolComparator } from '../lib/school_comparator.js';
-import { selectYongSin } from '../lib/yongsin/selector.js';
+import { selectYongSin, summarizeYongSinConsensus } from '../lib/yongsin/selector.js';
 import { InterpretationSettings } from '../lib/interpretation_settings.js';
 
 export type AnalysisType = 
@@ -71,7 +71,7 @@ export async function handleAnalyzeSaju(args: AnalyzeSajuArgs): Promise<string> 
 
     case 'yongsin': {
       const yongsin = selectYongSinOrig(sajuData);
-      return JSON.stringify(yongsin);
+      return JSON.stringify({ ...yongsin, consensus: summarizeYongSinConsensus(sajuData) });
     }
 
     case 'school_compare': {
