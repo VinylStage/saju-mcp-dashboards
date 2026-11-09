@@ -43,7 +43,11 @@
 
 ## 완료된 기술 부채
 
-(없음 - 추적 시작)
+### TD-008: `SOLAR_TERMS_JIE`에 중기(소설) 포함, 절(소한) 누락 — 2026-11-09 완료
+
+- **영향**: `getNextJieSolarTermByInstant` / `getPreviousJieSolarTermByInstant` → 대운 기산(`src/lib/dae_un.ts` calculateDaeUnStartAge)
+- **증상**: 12월 중순~1월 초 순행 출생은 소한을 건너뛰고 입춘까지 계산(예: 2020-12-20 양남 10세 → 정상 5세). 11월 하순 역행 출생은 입동 대신 소설 기준(예: 2021-11-28 음남 2세 → 정상 6세)
+- **해결**: `src/data/solar_terms.ts`에서 `'소설'` → `'소한'` 교체, 회귀 테스트 `tests/dae-un-jie.test.ts` 추가
 
 ## 관리 원칙
 
