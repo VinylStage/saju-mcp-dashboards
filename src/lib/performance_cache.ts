@@ -181,7 +181,7 @@ if (typeof setInterval !== 'undefined') {
       }
     },
     60 * 60 * 1000
-  ); // 1시간마다
+  ).unref(); // 1시간마다
 }
 
 /**
