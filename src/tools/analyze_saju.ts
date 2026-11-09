@@ -11,6 +11,7 @@ import { selectYongSin as selectYongSinOrig } from '../lib/yong_sin.js';
 import { SchoolComparator } from '../lib/school_comparator.js';
 import { selectYongSin, summarizeYongSinConsensus } from '../lib/yongsin/selector.js';
 import { InterpretationSettings } from '../lib/interpretation_settings.js';
+import { birthOptionsFromArgs, type BirthOptionArgs } from '../lib/birth_options.js';
 
 export type AnalysisType = 
   | 'basic'           // 기본 사주팔자 계산
@@ -19,7 +20,7 @@ export type AnalysisType =
   | 'school_compare'  // 유파 비교
   | 'yongsin_method'; // 용신 방법론
 
-export interface AnalyzeSajuArgs {
+export interface AnalyzeSajuArgs extends BirthOptionArgs {
   birthDate: string;
   birthTime: string;
   /** 출생 시군구 (longitude_table 키: 서울, 부산, 제주 등). 생략 시 서울 */
@@ -54,7 +55,15 @@ export async function handleAnalyzeSaju(args: AnalyzeSajuArgs): Promise<string> 
   } = args;
 
   // 사주 계산
-  const sajuData = calculateSaju(birthDate, birthTime, calendar, isLeapMonth, gender, birthCity);
+  const sajuData = calculateSaju(
+    birthDate,
+    birthTime,
+    calendar,
+    isLeapMonth,
+    gender,
+    birthCity,
+    birthOptionsFromArgs(args)
+  );
 
   switch (analysisType) {
     case 'basic':

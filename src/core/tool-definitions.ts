@@ -27,6 +27,19 @@ const toolSchemaFactories: Record<string, () => Tool> = {
         calendar: { type: 'string', enum: ['solar', 'lunar'], default: 'solar' },
         isLeapMonth: { type: 'boolean', default: false },
         gender: { type: 'string', enum: ['male', 'female'] },
+        birthLongitude: {
+          type: 'number',
+          description: '해외 출생 시 출생지 경도(동경 +, 서경 -). 지정 시 birthCity 경도 대신 사용',
+        },
+        birthTimezone: {
+          type: 'string',
+          description: '해외 출생 시 IANA 타임존(예: America/New_York). 당시 DST 자동 반영. 기본 Asia/Seoul',
+        },
+        ziHourMode: {
+          type: 'string',
+          enum: ['same-day', 'next-day'],
+          description: '23시대 자시의 일주: same-day(당일, 기본) | next-day(다음 날)',
+        },
         analysisType: {
           type: 'string',
           enum: ['basic', 'fortune', 'yongsin', 'school_compare', 'yongsin_method'],
@@ -125,6 +138,19 @@ const toolSchemaFactories: Record<string, () => Tool> = {
         calendar: { type: 'string', enum: ['solar', 'lunar'], default: 'solar' },
         isLeapMonth: { type: 'boolean', default: false },
         gender: { type: 'string', enum: ['male', 'female'] },
+        birthLongitude: {
+          type: 'number',
+          description: '해외 출생 시 출생지 경도(동경 +, 서경 -). 지정 시 birthCity 경도 대신 사용',
+        },
+        birthTimezone: {
+          type: 'string',
+          description: '해외 출생 시 IANA 타임존(예: America/New_York). 당시 DST 자동 반영. 기본 Asia/Seoul',
+        },
+        ziHourMode: {
+          type: 'string',
+          enum: ['same-day', 'next-day'],
+          description: '23시대 자시의 일주: same-day(당일, 기본) | next-day(다음 날)',
+        },
         targetDate: { type: 'string', description: 'YYYY-MM-DD' },
       },
       required: ['targetDate'],
@@ -147,6 +173,19 @@ const toolSchemaFactories: Record<string, () => Tool> = {
         calendar: { type: 'string', enum: ['solar', 'lunar'], default: 'solar' },
         isLeapMonth: { type: 'boolean', default: false },
         gender: { type: 'string', enum: ['male', 'female'] },
+        birthLongitude: {
+          type: 'number',
+          description: '해외 출생 시 출생지 경도(동경 +, 서경 -). 지정 시 birthCity 경도 대신 사용',
+        },
+        birthTimezone: {
+          type: 'string',
+          description: '해외 출생 시 IANA 타임존(예: America/New_York). 당시 DST 자동 반영. 기본 Asia/Seoul',
+        },
+        ziHourMode: {
+          type: 'string',
+          enum: ['same-day', 'next-day'],
+          description: '23시대 자시의 일주: same-day(당일, 기본) | next-day(다음 날)',
+        },
         age: { type: 'number', description: '조회할 만 나이(선택). targetYear와 함께 주면 targetYear 우선' },
         targetYear: {
           type: 'number',
@@ -174,6 +213,19 @@ const toolSchemaFactories: Record<string, () => Tool> = {
         calendar: { type: 'string', enum: ['solar', 'lunar'], default: 'solar' },
         isLeapMonth: { type: 'boolean', default: false },
         gender: { type: 'string', enum: ['male', 'female'] },
+        birthLongitude: {
+          type: 'number',
+          description: '해외 출생 시 출생지 경도(동경 +, 서경 -). 지정 시 birthCity 경도 대신 사용',
+        },
+        birthTimezone: {
+          type: 'string',
+          description: '해외 출생 시 IANA 타임존(예: America/New_York). 당시 DST 자동 반영. 기본 Asia/Seoul',
+        },
+        ziHourMode: {
+          type: 'string',
+          enum: ['same-day', 'next-day'],
+          description: '23시대 자시의 일주: same-day(당일, 기본) | next-day(다음 날)',
+        },
         periodType: {
           type: 'string',
           enum: ['year', 'month', 'hour', 'multi-year'],

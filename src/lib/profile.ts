@@ -14,6 +14,9 @@ export interface BirthProfile {
   calendar?: CalendarType;
   isLeapMonth?: boolean;
   gender: Gender;
+  birthLongitude?: number;
+  birthTimezone?: string;
+  ziHourMode?: 'same-day' | 'next-day';
 }
 
 let current: BirthProfile | null = null;

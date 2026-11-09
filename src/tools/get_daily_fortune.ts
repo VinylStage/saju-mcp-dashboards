@@ -6,8 +6,9 @@ import { getDailyFortune } from '../lib/fortune.js';
 import { calculateSaju } from '../lib/saju.js';
 import { isValidDate } from '../lib/calendar.js';
 import type { CalendarType, Gender } from '../types/index.js';
+import { birthOptionsFromArgs, type BirthOptionArgs } from '../lib/birth_options.js';
 
-export interface GetDailyFortuneArgs {
+export interface GetDailyFortuneArgs extends BirthOptionArgs {
   birthDate: string;
   birthTime: string;
   birthCity?: string;
@@ -34,7 +35,15 @@ export function handleGetDailyFortune(args: GetDailyFortuneArgs): string {
   }
 
   // 사주 계산
-  const sajuData = calculateSaju(birthDate, birthTime, calendar, isLeapMonth, gender, birthCity);
+  const sajuData = calculateSaju(
+    birthDate,
+    birthTime,
+    calendar,
+    isLeapMonth,
+    gender,
+    birthCity,
+    birthOptionsFromArgs(args)
+  );
 
   // 일일 운세 생성
   const dailyFortune = getDailyFortune(sajuData, targetDate);

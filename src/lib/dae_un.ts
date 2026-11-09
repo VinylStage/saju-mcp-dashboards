@@ -8,7 +8,7 @@ import { getHeavenlyStemByIndex } from '../data/heavenly_stems.js';
 import { getEarthlyBranchByIndex } from '../data/earthly_branches.js';
 import { getNextJieSolarTermByInstant, getPreviousJieSolarTermByInstant } from '../data/solar_terms.js';
 import { daeUnCache, generateDaeUnCacheKey } from './performance_cache.js';
-import { getAdjustedBirthInstantForSaju } from '../utils/date.js';
+import { getBirthInstantsForSaju } from '../utils/date.js';
 import { addYears } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
 
@@ -34,7 +34,9 @@ export function calculateDaeUn(
   const cacheKey = generateDaeUnCacheKey(
     sajuData.birthDate,
     sajuData.birthTime,
-    sajuData.birthCity,
+    sajuData.birthOptions
+      ? `${sajuData.birthCity}|${JSON.stringify(sajuData.birthOptions)}`
+      : sajuData.birthCity,
     sajuData.year.stem,
     sajuData.month.stem,
     sajuData.gender
@@ -130,11 +132,12 @@ const DAYS_PER_YEAR = 365.2425;
  * 대운 시작: startAge(3일=1년 내림, 기존 규칙)와 첫 대운 시작 시각(경과일/3 년 연속 환산)
  */
 function calculateDaeUnStart(sajuData: SajuData): { startAge: number; firstStart: Date } {
-  const birth = getAdjustedBirthInstantForSaju(
+  const birth = getBirthInstantsForSaju(
     sajuData.birthDate,
     sajuData.birthTime,
-    sajuData.birthCity
-  );
+    sajuData.birthCity,
+    sajuData.birthOptions
+  ).termInstant;
   const totalDays = calculateDaeUnStartDays(sajuData, birth);
   return {
     startAge: daeUnStartAgeFromThreeDayRule(totalDays),
