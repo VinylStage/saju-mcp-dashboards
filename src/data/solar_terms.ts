@@ -140,6 +140,7 @@ const SEOUL_TZ = 'Asia/Seoul';
  * 24절기 중 **절(節)** 12개 — 월건(月建)·대운 기산에 쓰임. **기(氣)**(우수·춘분 등)는 제외.
  */
 export const SOLAR_TERMS_JIE: SolarTerm[] = [
+  '소한',
   '입춘',
   '경칩',
   '청명',
@@ -150,7 +151,6 @@ export const SOLAR_TERMS_JIE: SolarTerm[] = [
   '백로',
   '한로',
   '입동',
-  '소설',
   '대설',
 ];
 
