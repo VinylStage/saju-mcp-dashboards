@@ -47,12 +47,6 @@
 - **위험**: 충·형 일과 점수 불일치, 월말·월초 톱니 패턴
 - **해결**: 일진-원국 관계(`relationWithSaju.relations`)·용신 기반 산식으로 재설계 (승인 필요)
 
-### [높음] TD-008: SOLAR_TERMS_JIE에 소한 대신 소설 포함
-
-- **영향**: `src/data/solar_terms.ts` 절(節) 목록 오류
-- **위험**: 11/22~1/5 출생자 대운 기산 오차 가능
-- **해결**: `소설` → `소한` 교체 + 대운 회귀 테스트
-
 ### [중간] TD-009: 용신 방법 간 불일치·대운 시작 일자 미제공 (B6, B7)
 
 - **해결**: 상세 `docs/exec-plans/completed/2026-11-09-fortune-maintenance.md`
@@ -60,6 +54,12 @@
 ## 완료된 기술 부채
 
 - 2026-11-09: 월운 간지 오프셋(B1), 일진 원국 관계(B2), 일운 색/조언 용신 모순(B3), 월운 길일 템플릿(B4) — `docs/exec-plans/completed/2026-11-09-fortune-maintenance.md`
+
+### TD-008: `SOLAR_TERMS_JIE`에 중기(소설) 포함, 절(소한) 누락 — 2026-11-09 완료
+
+- **영향**: `getNextJieSolarTermByInstant` / `getPreviousJieSolarTermByInstant` → 대운 기산(`src/lib/dae_un.ts` calculateDaeUnStartAge)
+- **증상**: 12월 중순~1월 초 순행 출생은 소한을 건너뛰고 입춘까지 계산(예: 2020-12-20 양남 10세 → 정상 5세). 11월 하순 역행 출생은 입동 대신 소설 기준(예: 2021-11-28 음남 2세 → 정상 6세)
+- **해결**: `src/data/solar_terms.ts`에서 `'소설'` → `'소한'` 교체, 회귀 테스트 `tests/dae-un-jie.test.ts` 추가
 
 ## 관리 원칙
 

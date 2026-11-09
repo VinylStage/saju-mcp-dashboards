@@ -32,7 +32,7 @@
 
 ## 별도 발견
 
-- `src/data/solar_terms.ts` `SOLAR_TERMS_JIE`에 `소한` 대신 `소설`(중기)이 포함. 대운 기산(`getNext/PreviousJieSolarTermByInstant`)에 영향 가능
+- `src/data/solar_terms.ts` `SOLAR_TERMS_JIE`에 `소한` 대신 `소설`(중기)이 포함 → VinylStage/saju-mcp-dashboards#2 에서 수정 완료 (TD-008)
 - `src/lib/constants.ts` `TRIPLE_HARMONY`는 방합(寅卯辰 등)인데 삼합으로 명명
 - 컨테이너 TZ=UTC에서 `tests/solar-terms-verification.test.ts` 2건 실패 (로컬 시각 생성자 사용). jest가 open handle로 종료되지 않음 (`--forceExit` 필요)
 
