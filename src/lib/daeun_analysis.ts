@@ -184,9 +184,9 @@ export function calculateDaeunList(
   const monthStem = saju.month.stem;
   const monthBranch = saju.month.branch;
 
-  // 양남음녀는 순행, 음남양녀는 역행
-  // TODO: 실제로는 연주의 음양을 확인해야 하지만, 간단히 성별로 판단
-  const isYangMale = gender === 'male';
+  // 양남음녀는 순행, 음남양녀는 역행 (연간 음양 기준)
+  const isYangYear = saju.year.yinYang === '양';
+  const isYangMale = (gender === 'male') === isYangYear;
   const direction: '順行' | '逆行' = isYangMale ? '順行' : '逆行';
 
   const birthDate = getAdjustedBirthInstantForSaju(saju.solarBirthDate, saju.birthTime, saju.birthCity);
