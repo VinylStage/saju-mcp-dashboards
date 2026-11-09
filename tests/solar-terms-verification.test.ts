@@ -61,14 +61,14 @@ describe('절기 데이터 커버리지 검증', () => {
 describe('getCurrentSolarTerm 근사 함수 버그 검증', () => {
   // Critical-2: 12월~1월 순환 실패 재현
   test('[Bug] 12월 22일 이후에 동지가 반환되어야 함 (현재 버그: 입춘 반환)', () => {
-    const dec25 = new Date(2025, 11, 25, 12, 0, 0); // 12월 25일
+    const dec25 = new Date('2025-12-25T12:00:00+09:00'); // 12월 25일
     const result = getCurrentSolarTerm(dec25);
     // 12월 22일 이후는 동지여야 하지만, 현재 버그로 인해 '입춘'이 반환될 수 있음
     expect(result).toBe('동지');
   });
 
   test('[Bug] 1월 3일에 동지가 반환되어야 함 (소한 이전)', () => {
-    const jan3 = new Date(2026, 0, 3, 12, 0, 0);
+    const jan3 = new Date('2026-01-03T12:00:00+09:00');
     const result = getCurrentSolarTerm(jan3);
     // 소한(1/6)  이전이므로 동지가 반환되어야 함
     expect(result).toBe('동지');
@@ -77,44 +77,44 @@ describe('getCurrentSolarTerm 근사 함수 버그 검증', () => {
 
 describe('getCurrentSolarTermPrecise 정밀 함수 검증', () => {
   test('12월 25일에 동지가 반환되어야 함', () => {
-    const dec25 = new Date(2025, 11, 25, 12, 0, 0);
+    const dec25 = new Date('2025-12-25T12:00:00+09:00');
     const result = getCurrentSolarTermPrecise(dec25);
     expect(result).toBe('동지');
   });
 
   test('1월 3일에 동지가 반환되어야 함 (소한 이전)', () => {
-    const jan3 = new Date(2026, 0, 3, 12, 0, 0);
+    const jan3 = new Date('2026-01-03T12:00:00+09:00');
     const result = getCurrentSolarTermPrecise(jan3);
     expect(result).toBe('동지');
   });
 
   test('1월 6일 이후에 소한이 반환되어야 함', () => {
-    const jan7 = new Date(2026, 0, 7, 12, 0, 0);
+    const jan7 = new Date('2026-01-07T12:00:00+09:00');
     const result = getCurrentSolarTermPrecise(jan7);
     expect(result).toBe('소한');
   });
 
   // 입춘 경계 테스트
   test('2025년 입춘(2/3 23:10) 이전에는 대한이어야 함', () => {
-    const beforeIpchun = new Date(2025, 1, 3, 22, 0, 0); // 2/3 22:00
+    const beforeIpchun = new Date('2025-02-03T22:00:00+09:00'); // 2/3 22:00
     const result = getCurrentSolarTermPrecise(beforeIpchun);
     expect(result).toBe('대한');
   });
 
   test('2025년 입춘(2/3 23:10) 이후에는 입춘이어야 함', () => {
-    const afterIpchun = new Date(2025, 1, 4, 0, 0, 0); // 2/4 00:00
+    const afterIpchun = new Date('2025-02-04T00:00:00+09:00'); // 2/4 00:00
     const result = getCurrentSolarTermPrecise(afterIpchun);
     expect(result).toBe('입춘');
   });
 
   test('2026년 입춘(2/4 04:46) 이전에는 대한이어야 함', () => {
-    const beforeIpchun = new Date(2026, 1, 4, 3, 0, 0); // 2/4 03:00
+    const beforeIpchun = new Date('2026-02-04T03:00:00+09:00'); // 2/4 03:00
     const result = getCurrentSolarTermPrecise(beforeIpchun);
     expect(result).toBe('대한');
   });
 
   test('2026년 입춘(2/4 04:46) 이후에는 입춘이어야 함', () => {
-    const afterIpchun = new Date(2026, 1, 4, 5, 0, 0); // 2/4 05:00
+    const afterIpchun = new Date('2026-02-04T05:00:00+09:00'); // 2/4 05:00
     const result = getCurrentSolarTermPrecise(afterIpchun);
     expect(result).toBe('입춘');
   });

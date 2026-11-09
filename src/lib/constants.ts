@@ -28,10 +28,10 @@ export const EARTHLY_CONFLICTS: Record<EarthlyBranch, EarthlyBranch> = {
  * 삼합 (三合) - 지지의 삼합 그룹
  */
 export const TRIPLE_HARMONY: Record<string, EarthlyBranch[]> = {
-  '목국': ['인', '묘', '진'],
-  '화국': ['사', '오', '미'],
-  '금국': ['신', '유', '술'],
-  '수국': ['해', '자', '축'],
+  '목국': ['해', '묘', '미'],
+  '화국': ['인', '오', '술'],
+  '금국': ['사', '유', '축'],
+  '수국': ['신', '자', '진'],
 } as const;
 
 /**
