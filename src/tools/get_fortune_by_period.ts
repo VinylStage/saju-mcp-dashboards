@@ -8,10 +8,11 @@ import { calculateSaju } from '../lib/saju.js';
 import { analyzeSeUn, getMultipleSeUn } from '../lib/se_un.js';
 import { analyzeWolUn } from '../lib/wol_un.js';
 import { analyzeIljin } from '../lib/iljin_analysis.js';
+import { birthOptionsFromArgs, type BirthOptionArgs } from '../lib/birth_options.js';
 
 export type PeriodType = 'year' | 'month' | 'hour' | 'multi-year';
 
-export interface GetFortuneByPeriodArgs {
+export interface GetFortuneByPeriodArgs extends BirthOptionArgs {
   birthDate: string;
   birthTime: string;
   birthCity?: string;
@@ -37,7 +38,15 @@ export function handleGetFortuneByPeriod(args: GetFortuneByPeriodArgs): string {
   } = args;
 
   // 사주 계산
-  const sajuData = calculateSaju(birthDate, birthTime, calendar, isLeapMonth, gender, birthCity);
+  const sajuData = calculateSaju(
+    birthDate,
+    birthTime,
+    calendar,
+    isLeapMonth,
+    gender,
+    birthCity,
+    birthOptionsFromArgs(args)
+  );
 
   switch (periodType) {
     case 'year': {

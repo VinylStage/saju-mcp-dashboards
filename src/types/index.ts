@@ -62,6 +62,16 @@ export interface SajuPillars {
   hour: Pillar; // 시주 (時柱)
 }
 
+/** 해외 출생·자시 처리 옵션 (#11) */
+export interface BirthOptions {
+  /** 출생지 경도 (동경 +, 서경 -). 지정 시 birthCity 경도 대신 사용 */
+  longitude?: number;
+  /** 출생지 IANA 타임존 (예: America/New_York). 역사적 DST 포함. 기본 Asia/Seoul */
+  timezone?: string;
+  /** 23시대 자시의 일주: same-day(당일 유지, 기본) | next-day(다음 날) */
+  ziHourMode?: 'same-day' | 'next-day';
+}
+
 // 사주팔자 전체 데이터
 export interface SajuData {
   // 기본 정보
@@ -72,6 +82,7 @@ export interface SajuData {
   calendar: CalendarType;
   isLeapMonth: boolean;
   gender: Gender;
+  birthOptions?: BirthOptions;
 
   // 사주 사기둥
   year: Pillar; // 연주 (年柱)

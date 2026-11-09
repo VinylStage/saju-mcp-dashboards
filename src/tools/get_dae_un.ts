@@ -7,8 +7,9 @@ import { calculateSaju } from '../lib/saju.js';
 import { calculateDaeUn, getDaeUnAtAge, formatDaeUnList, formatDaeUn } from '../lib/dae_un.js';
 import type { CalendarType, Gender } from '../types/index.js';
 import { getManAgeForFortuneYear } from '../utils/date.js';
+import { birthOptionsFromArgs, type BirthOptionArgs } from '../lib/birth_options.js';
 
-export interface GetDaeUnArgs {
+export interface GetDaeUnArgs extends BirthOptionArgs {
   birthDate: string;
   birthTime: string;
   birthCity?: string;
@@ -37,7 +38,15 @@ export function handleGetDaeUn(args: GetDaeUnArgs): string {
     } = args;
 
     // 1. 사주 계산
-    const sajuData = calculateSaju(birthDate, birthTime, calendar, isLeapMonth, gender, birthCity);
+    const sajuData = calculateSaju(
+    birthDate,
+    birthTime,
+    calendar,
+    isLeapMonth,
+    gender,
+    birthCity,
+    birthOptionsFromArgs(args)
+  );
 
     // 2. 대운 계산
     const daeUnPeriods = calculateDaeUn(sajuData);

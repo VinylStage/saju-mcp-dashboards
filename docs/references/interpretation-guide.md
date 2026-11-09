@@ -15,6 +15,8 @@
 | 음력 윤달 | 음력일 때만 `isLeapMonth` |
 | 성별 | `gender`: male / female |
 | 태어난 곳 | 시군구 한글명 (`birthCity`). 생략 시 서울 |
+| 해외 출생 | `birthLongitude`(동경 +, 서경 -) + `birthTimezone`(IANA, 당시 DST 자동 반영). 일·시주는 지방평균태양시, 연·월주·대운은 실제 출생 순간 기준 |
+| 자시 처리 | `ziHourMode`: same-day(23시대 자시도 당일 일주, 기본) / next-day(다음 날 일주) |
 
 이름/한자는 대화 맥락용. 도구 호출에는 스키마 필드만 전달.
 

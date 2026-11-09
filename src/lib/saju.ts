@@ -4,13 +4,13 @@
 
 import { differenceInCalendarDays } from 'date-fns';
 import { formatInTimeZone, toDate } from 'date-fns-tz';
-import type { SajuData, Pillar, Gender, CalendarType, WuXing } from '../types/index.js';
+import type { SajuData, Pillar, Gender, CalendarType, WuXing, BirthOptions } from '../types/index.js';
 import { getHeavenlyStemByIndex } from '../data/heavenly_stems.js';
 import { getEarthlyBranchByIndex, analyzeBranchRelations, checkWolRyeong, calculateJiJangGanStrength } from '../data/earthly_branches.js';
 import { getCurrentSolarTerm, getSolarTermMonthIndex } from '../data/solar_terms.js';
 import { WUXING_DATA } from '../data/wuxing.js';
 import { convertCalendar } from './calendar.js';
-import { getAdjustedBirthInstantForSaju } from '../utils/date.js';
+import { getBirthInstantsForSaju } from '../utils/date.js';
 import { resolveBirthCityForSaju } from '../data/longitude_table.js';
 import { calculateTenGodsDistribution, generateTenGodsList } from './ten_gods.js';
 import { findSinSals, getSinSalInfo } from './sin_sal.js';
@@ -31,9 +31,15 @@ export function calculateSaju(
   calendar: CalendarType,
   isLeapMonth: boolean,
   gender: Gender,
-  birthCity?: string
+  birthCity?: string,
+  birthOptions?: BirthOptions
 ): SajuData {
   const resolvedBirthCity = resolveBirthCityForSaju(birthCity);
+  const hasOptions =
+    birthOptions !== undefined &&
+    (birthOptions.longitude !== undefined ||
+      birthOptions.timezone !== undefined ||
+      birthOptions.ziHourMode !== undefined);
 
   // 캐시 체크
   const cacheKey = generateSajuCacheKey(
@@ -42,7 +48,7 @@ export function calculateSaju(
     calendar,
     isLeapMonth,
     gender,
-    resolvedBirthCity
+    hasOptions ? `${resolvedBirthCity}|${JSON.stringify(birthOptions)}` : resolvedBirthCity
   );
   const cached = sajuCache.get(cacheKey);
   if (cached) {
@@ -56,20 +62,30 @@ export function calculateSaju(
     solarDate = conversion.convertedDate;
   }
 
-  // 출생 벽시계(썸머타임) + 출생지 경도 보정(동경 135° 대비)
-  const adjustedDate = getAdjustedBirthInstantForSaju(solarDate, birthTime, resolvedBirthCity);
+  // 출생 벽시계(썸머타임·해외 타임존) + 출생지 경도 보정(동경 135° 대비)
+  const { pillarInstant, termInstant } = getBirthInstantsForSaju(
+    solarDate,
+    birthTime,
+    resolvedBirthCity,
+    birthOptions
+  );
 
   // 연주 계산
-  const yearPillar = calculateYearPillar(adjustedDate);
+  const yearPillar = calculateYearPillar(termInstant);
 
   // 월주 계산
-  const monthPillar = calculateMonthPillar(adjustedDate, yearPillar);
+  const monthPillar = calculateMonthPillar(termInstant, yearPillar);
 
-  // 일주 계산
-  const dayPillar = calculateDayPillar(adjustedDate);
+  // 일주 계산 (next-day 모드: 23시대 자시는 다음 날 일주)
+  const isLateZi = parseInt(formatInTimeZone(pillarInstant, SEOUL_TZ, 'H'), 10) >= 23;
+  const dayInstant =
+    birthOptions?.ziHourMode === 'next-day' && isLateZi
+      ? new Date(pillarInstant.getTime() + 60 * 60 * 1000)
+      : pillarInstant;
+  const dayPillar = calculateDayPillar(dayInstant);
 
   // 시주 계산
-  const hourPillar = calculateHourPillar(adjustedDate, dayPillar);
+  const hourPillar = calculateHourPillar(pillarInstant, dayPillar);
 
   // 오행 개수 세기
   const wuxingCount: Record<WuXing, number> = {
@@ -106,6 +122,7 @@ export function calculateSaju(
     calendar,
     isLeapMonth,
     gender,
+    ...(hasOptions ? { birthOptions } : {}),
     year: yearPillar,
     month: monthPillar,
     day: dayPillar,
@@ -128,7 +145,7 @@ export function calculateSaju(
   sajuData.branchRelations = analyzeBranchRelations(branches);
 
   // 지장간 세력 계산
-  const currentSolarTerm = getCurrentSolarTerm(adjustedDate);
+  const currentSolarTerm = getCurrentSolarTerm(termInstant);
   const monthIndex = getSolarTermMonthIndex(currentSolarTerm);
   sajuData.jiJangGan = {
     year: calculateJiJangGanStrength(yearPillar.branch, monthIndex),

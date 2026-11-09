@@ -5,7 +5,8 @@
 
 import { parseISO, format, addMinutes, isValid, differenceInYears } from 'date-fns';
 import { toDate, fromZonedTime } from 'date-fns-tz';
-import { getLongitudeOffsetMinutesForSaju } from '../data/longitude_table.js';
+import { getLongitudeOffsetMinutesForSaju, calculateTrueSolarTimeOffset } from '../data/longitude_table.js';
+import type { BirthOptions } from '../types/index.js';
 
 /**
  * 한국 시간대
@@ -41,6 +42,45 @@ export function getAdjustedBirthInstantForSaju(
   const wall = parseBirthDateTimeKorea(solarDate, birthTime);
   const offsetMin = getLongitudeOffsetMinutesForSaju(birthCity);
   return addMinutes(wall, offsetMin);
+}
+
+/**
+ * 사주 계산용 시각 2종
+ * - pillarInstant: 지방평균태양시를 KST 표기로 옮긴 시각 (일주·시주용)
+ * - termInstant: 절기 비교용 시각 (연주·월주·대운용)
+ * 옵션(경도·타임존) 미지정 시 기존 동작과 동일: 두 값 모두 getAdjustedBirthInstantForSaju
+ * 옵션 지정 시 termInstant는 실제 출생 순간(UTC), pillarInstant = 실제 순간 + (경도 - 135)×4분
+ */
+export function getBirthInstantsForSaju(
+  solarDate: string,
+  birthTime: string,
+  birthCity?: string,
+  options?: BirthOptions
+): { pillarInstant: Date; termInstant: Date } {
+  if (options?.longitude === undefined && options?.timezone === undefined) {
+    const adjusted = getAdjustedBirthInstantForSaju(solarDate, birthTime, birthCity);
+    return { pillarInstant: adjusted, termInstant: adjusted };
+  }
+
+  const timezone = options.timezone ?? KOREA_TIMEZONE;
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: timezone });
+  } catch {
+    throw new Error(`유효하지 않은 타임존입니다: ${timezone}. IANA 형식(예: America/New_York)을 사용하세요.`);
+  }
+  if (options.longitude !== undefined && (!Number.isFinite(options.longitude) || Math.abs(options.longitude) > 180)) {
+    throw new Error(`유효하지 않은 경도입니다: ${options.longitude}. -180 ~ 180 (동경 +, 서경 -) 범위를 사용하세요.`);
+  }
+
+  const trueInstant = toDate(`${solarDate}T${birthTime}:00`, { timeZone: timezone });
+  if (isNaN(trueInstant.getTime())) {
+    throw new Error(`유효하지 않은 출생일시입니다: ${solarDate} ${birthTime}`);
+  }
+  const offsetMin =
+    options.longitude !== undefined
+      ? calculateTrueSolarTimeOffset(options.longitude)
+      : getLongitudeOffsetMinutesForSaju(birthCity);
+  return { pillarInstant: addMinutes(trueInstant, offsetMin), termInstant: trueInstant };
 }
 
 /**
