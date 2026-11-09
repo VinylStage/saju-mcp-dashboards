@@ -49,9 +49,14 @@ export interface IljinAnalysis {
 
   // 일진과 사주의 관계
   relationWithSaju: {
-    harmony: boolean; // 조화 여부
-    conflict: boolean; // 충돌 여부
+    harmony: boolean; // 조화 여부 (원국 4지지 중 하나라도 육합)
+    conflict: boolean; // 충돌 여부 (원국 4지지 중 하나라도 충·형)
     description: string;
+    relations: {
+      pillar: 'year' | 'month' | 'day' | 'hour';
+      natalBranch: EarthlyBranch;
+      type: '육합' | '충' | '형' | '복음';
+    }[];
   };
 
   // 길한 시간대
@@ -264,39 +269,53 @@ function analyzeRelationWithSaju(
   dayBranch: EarthlyBranch,
   saju: SajuData
 ): IljinAnalysis['relationWithSaju'] {
-  let harmony = false;
-  let conflict = false;
-  let description = '';
+  const pillars: { key: 'year' | 'month' | 'day' | 'hour'; label: string; branch: EarthlyBranch }[] = [
+    { key: 'year', label: '연지', branch: saju.year.branch },
+    { key: 'month', label: '월지', branch: saju.month.branch },
+    { key: 'day', label: '일지', branch: saju.day.branch },
+    { key: 'hour', label: '시지', branch: saju.hour.branch },
+  ];
 
-  // 일지 육합
-  const sixHarmony: Record<EarthlyBranch, EarthlyBranch> = {
-    '자': '축', '인': '해', '묘': '술', '진': '유',
-    '사': '신', '오': '미', '축': '자', '해': '인',
-    '술': '묘', '유': '진', '신': '사', '미': '오',
-  };
+  const relations: IljinAnalysis['relationWithSaju']['relations'] = [];
+  const parts: string[] = [];
 
-  if (saju.day.branch === sixHarmony[dayBranch]) {
-    harmony = true;
-    description = '사주 일지와 육합하여 매우 길한 날';
+  for (const p of pillars) {
+    const push = (type: '육합' | '충' | '형' | '복음', text: string) => {
+      relations.push({ pillar: p.key, natalBranch: p.branch, type });
+      parts.push(`${p.label} ${p.branch}와 ${text}`);
+    };
+    if (p.branch === dayBranch) {
+      push('복음', '복음');
+    }
+    if (SIX_HARMONY[dayBranch] === p.branch) {
+      push('육합', `${dayBranch}${p.branch}합`);
+    }
+    if (EARTHLY_CONFLICTS[dayBranch] === p.branch) {
+      push('충', `${dayBranch}${p.branch}충`);
+    }
+    if (isPunishment(dayBranch, p.branch)) {
+      push('형', `${dayBranch}${p.branch}형`);
+    }
   }
 
-  // 일지 충
-  const conflicts: Record<EarthlyBranch, EarthlyBranch> = {
-    '자': '오', '축': '미', '인': '신', '묘': '유',
-    '진': '술', '사': '해', '오': '자', '미': '축',
-    '신': '인', '유': '묘', '술': '진', '해': '사',
-  };
+  const harmony = relations.some((r) => r.type === '육합');
+  const conflict = relations.some((r) => r.type === '충' || r.type === '형');
+  const description =
+    parts.length > 0 ? parts.join(', ') : '사주와 특별한 관계 없이 평범한 날';
 
-  if (saju.day.branch === conflicts[dayBranch]) {
-    conflict = true;
-    description = '사주 일지와 충하여 주의가 필요한 날';
-  }
+  return { harmony, conflict, description, relations };
+}
 
-  if (!harmony && !conflict) {
-    description = '사주와 특별한 관계 없이 평범한 날';
-  }
+/** 형(刑) 쌍: 寅巳申 삼형, 丑戌未 삼형, 子卯 상형, 辰午酉亥 자형 */
+const PUNISHMENT_PAIRS: [EarthlyBranch, EarthlyBranch][] = [
+  ['인', '사'], ['사', '신'], ['신', '인'],
+  ['축', '술'], ['술', '미'], ['미', '축'],
+  ['자', '묘'],
+  ['진', '진'], ['오', '오'], ['유', '유'], ['해', '해'],
+];
 
-  return { harmony, conflict, description };
+function isPunishment(a: EarthlyBranch, b: EarthlyBranch): boolean {
+  return PUNISHMENT_PAIRS.some(([x, y]) => (x === a && y === b) || (x === b && y === a));
 }
 
 /**

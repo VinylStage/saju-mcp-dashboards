@@ -6,6 +6,9 @@ import type { SajuData, FortuneAnalysis, FortuneAnalysisType, DailyFortune, WuXi
 import { WUXING_DATA, analyzeWuXingBalance } from '../data/wuxing.js';
 import { interpretAllTenGods } from './ten_gods.js';
 import { interpretBySinSal } from './sin_sal.js';
+import { getDayPillar } from './helpers.js';
+import { HEAVENLY_STEMS } from './constants.js';
+import { getHeavenlyStemByIndex } from '../data/heavenly_stems.js';
 
 /**
  * 사주를 기반으로 운세 분석
@@ -659,7 +662,10 @@ function seededRandom(seed: number): number {
 export function getDailyFortune(sajuData: SajuData, date: string): DailyFortune {
   const targetDate = new Date(date);
   const seed = generateDateSeed(targetDate, sajuData);
-  const dayElement = sajuData.day.stemElement;
+  const [y, m, d] = date.split('-').map((v) => parseInt(v, 10));
+  const ilJin = getDayPillar(new Date(y!, m! - 1, d!));
+  const ilJinElement = getHeavenlyStemByIndex(HEAVENLY_STEMS.indexOf(ilJin.stem)).element;
+  const yongSin = sajuData.yongSin?.primaryYongSin ?? sajuData.day.stemElement;
 
   // 날짜 기반 운세 변동
   const dateNumber = targetDate.getDate();
@@ -679,9 +685,9 @@ export function getDailyFortune(sajuData: SajuData, date: string): DailyFortune 
     careerLuck: Math.round(Math.min(100, Math.max(30, 75 + variance + getVariance(2)))),
     healthLuck: Math.round(Math.min(100, Math.max(30, 70 + variance + getVariance(3)))),
     loveLuck: Math.round(Math.min(100, Math.max(30, 68 + variance + getVariance(4)))),
-    luckyColor: WUXING_DATA[dayElement].color[0]!,
-    luckyDirection: WUXING_DATA[dayElement].direction,
-    advice: `오늘은 ${dayElement} 기운이 강한 날입니다. ${WUXING_DATA[dayElement].personality[0]}하게 행동하세요.`,
+    luckyColor: WUXING_DATA[yongSin].color[0]!,
+    luckyDirection: WUXING_DATA[yongSin].direction,
+    advice: `오늘 일진은 ${ilJin.stem}${ilJin.branch}(${ilJinElement})일입니다. 용신 ${yongSin} 기운(${WUXING_DATA[yongSin].color[0]}, ${WUXING_DATA[yongSin].direction}쪽)을 보강하세요.`,
   };
 }
 
