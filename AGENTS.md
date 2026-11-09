@@ -52,6 +52,7 @@
 | [docs/references/interpretation-guide.md](docs/references/interpretation-guide.md) | 명리 해석 가이드, 도구 호출 전 확인 |
 | [docs/references/development-patterns.md](docs/references/development-patterns.md) | 코딩 패턴, API 사용법 |
 | [docs/references/glossary.md](docs/references/glossary.md) | 사주 용어집 (한/한자/영) |
+| [docs/references/scoring.md](docs/references/scoring.md) | 일운·일진 점수 산식, 등급 임계값 |
 | [docs/references/mcp-test-setup.md](docs/references/mcp-test-setup.md) | Claude Desktop 연동 설정 |
 | [docs/generated/db-schema.md](docs/generated/db-schema.md) | 데이터 스키마 (정적 테이블 구조) |
 
