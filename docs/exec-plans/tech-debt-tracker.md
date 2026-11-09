@@ -43,6 +43,7 @@
 
 ## 완료된 기술 부채
 
+- 2026-11-09: `daeun_analysis` 대운 방향을 연간 음양 기준(양남음녀 순행)으로 수정 (#25)
 - 2026-11-09: 음력 입력 시 대운 기산·만 나이가 음력 날짜를 양력으로 오인하던 문제 (#23). `SajuData.solarBirthDate` 추가
 - 2026-11-09: 해외 출생 `birthLongitude`/`birthTimezone`, 자시 `ziHourMode` (#11). 옵션 미지정 시 기존 결과 불변
 - 2026-11-09: 기본 출생 프로필 (#13). `manage_settings` set/get/clear_profile, 4개 개인 운세 도구 출생 정보 생략 허용, 프로세스 메모리 전용
