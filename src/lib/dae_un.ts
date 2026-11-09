@@ -133,7 +133,7 @@ const DAYS_PER_YEAR = 365.2425;
  */
 function calculateDaeUnStart(sajuData: SajuData): { startAge: number; firstStart: Date } {
   const birth = getBirthInstantsForSaju(
-    sajuData.birthDate,
+    sajuData.solarBirthDate,
     sajuData.birthTime,
     sajuData.birthCity,
     sajuData.birthOptions

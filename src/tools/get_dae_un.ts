@@ -55,7 +55,7 @@ export function handleGetDaeUn(args: GetDaeUnArgs): string {
 
     const resolvedAge =
       targetYear !== undefined
-        ? getManAgeForFortuneYear(birthDate, targetYear)
+        ? getManAgeForFortuneYear(sajuData.solarBirthDate, targetYear)
         : age;
 
     // 3. 특정 만 나이(또는 운 연도 기준 만 나이)의 대운 조회

@@ -189,7 +189,7 @@ export function calculateDaeunList(
   const isYangMale = gender === 'male';
   const direction: '順行' | '逆行' = isYangMale ? '順行' : '逆行';
 
-  const birthDate = getAdjustedBirthInstantForSaju(saju.birthDate, saju.birthTime, saju.birthCity);
+  const birthDate = getAdjustedBirthInstantForSaju(saju.solarBirthDate, saju.birthTime, saju.birthCity);
 
   // 절기 데이터 기반 정밀 대운 시작 나이 계산
   const startAge = calculateDaeunStartAge(birthDate, isYangMale);
@@ -238,7 +238,7 @@ export function getDaeunByYear(
   saju: SajuData,
   year: number
 ): DaeunPeriod | null {
-  const age = getManAgeForFortuneYear(saju.birthDate, year);
+  const age = getManAgeForFortuneYear(saju.solarBirthDate, year);
   return getDaeunByAge(saju, age);
 }
 

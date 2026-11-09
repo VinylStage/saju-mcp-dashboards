@@ -86,7 +86,7 @@ export function analyzeSeUn(
   sajuData: SajuData,
   targetYear: number
 ): SeUnYear {
-  const age = getManAgeForFortuneYear(sajuData.birthDate, targetYear);
+  const age = getManAgeForFortuneYear(sajuData.solarBirthDate, targetYear);
 
   const yearGanJi = getYearGanJi(targetYear);
   const stemData = getHeavenlyStemByIndex(
