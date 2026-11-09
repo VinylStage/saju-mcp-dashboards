@@ -56,8 +56,11 @@ export class DiseaseYongSinAlgorithm implements YongSinAlgorithm {
       xiSin.push(secondaryYongSin);
     }
 
-    // 기신: 문제 오행과 이를 돕는 오행
-    const jiSin: WuXing[] = [mainDisease.problematicElement];
+    // 기신: 과다면 문제 오행과 이를 돕는 오행, 결핍이면 결핍 오행을 극하는 오행, 그 외는 문제 오행
+    const jiSin: WuXing[] =
+      mainDisease.type === 'deficiency'
+        ? [WuXingRelations.getKeMeElement(mainDisease.problematicElement)]
+        : [mainDisease.problematicElement];
     if (mainDisease.type === 'excess') {
       jiSin.push(WuXingRelations.getShengMeElement(mainDisease.problematicElement));
     }

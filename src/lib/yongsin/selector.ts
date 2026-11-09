@@ -5,7 +5,7 @@
  * 4가지 알고리즘을 통합하고 사용자 설정에 따라 적절한 알고리즘 선택
  */
 
-import type { SajuData } from '../../types/index.js';
+import type { SajuData, WuXing } from '../../types/index.js';
 import type { YongSinMethod } from '../../types/interpretation.js';
 import type { YongSinAlgorithm, YongSinResult } from './base.js';
 import { StrengthYongSinAlgorithm } from './strength_algorithm.js';
@@ -24,6 +24,22 @@ const ALGORITHMS: Record<YongSinMethod, YongSinAlgorithm> = {
 };
 
 /**
+ * 유리(용신·보조용신·희신)로 판정된 오행을 기신·구신에서 제거 (방법 내부 무모순 보장)
+ */
+function normalizeResult(r: YongSinResult): YongSinResult {
+  const favorable = new Set<WuXing>([
+    r.primaryYongSin,
+    ...(r.secondaryYongSin ? [r.secondaryYongSin] : []),
+    ...r.xiSin,
+  ]);
+  return {
+    ...r,
+    jiSin: r.jiSin.filter((e) => !favorable.has(e)),
+    chouSin: r.chouSin.filter((e) => !favorable.has(e)),
+  };
+}
+
+/**
  * 용신 선택기
  */
 export class YongSinSelector {
@@ -39,7 +55,7 @@ export class YongSinSelector {
       throw new Error(`Unknown YongSin method: ${method}`);
     }
 
-    return algorithm.select(sajuData);
+    return normalizeResult(algorithm.select(sajuData));
   }
 
   /**
@@ -52,7 +68,7 @@ export class YongSinSelector {
 
     for (const [method, algorithm] of Object.entries(ALGORITHMS) as [YongSinMethod, YongSinAlgorithm][]) {
       try {
-        results[method] = algorithm.select(sajuData);
+        results[method] = normalizeResult(algorithm.select(sajuData));
       } catch (error) {
         console.error(`Error selecting YongSin with ${method}:`, error);
       }
@@ -149,4 +165,61 @@ export function selectYongSin(sajuData: SajuData, method: YongSinMethod = 'stren
  */
 export function selectYongSinAuto(sajuData: SajuData): YongSinResult & { recommendedMethod: YongSinMethod } {
   return YongSinSelector.selectAuto(sajuData);
+}
+
+export interface YongSinConsensus {
+  methods: Record<YongSinMethod, YongSinResult>;
+  recommendedMethod: YongSinMethod;
+  /** 1개 이상 방법에서 유리(용신·보조용신·희신), 불리 판정은 없음 */
+  agreedFavorable: WuXing[];
+  /** 1개 이상 방법에서 불리(기신·구신), 유리 판정은 없음 */
+  agreedUnfavorable: WuXing[];
+  /** 방법에 따라 유리/불리가 엇갈림 */
+  conflicting: WuXing[];
+  /** 어떤 방법도 판정하지 않음 */
+  neutral: WuXing[];
+  /** 신뢰도 가중 점수: Σ confidence × (용신 +2, 보조용신·희신 +1, 기신·구신 -1) */
+  ranking: { element: WuXing; score: number; favorableIn: YongSinMethod[]; unfavorableIn: YongSinMethod[] }[];
+}
+
+const ALL_ELEMENTS: WuXing[] = ['목', '화', '토', '금', '수'];
+
+/**
+ * 4개 용신 방법의 합의/충돌 요약
+ */
+export function summarizeYongSinConsensus(sajuData: SajuData): YongSinConsensus {
+  const methods = YongSinSelector.selectAll(sajuData);
+  const recommendedMethod = YongSinSelector.selectAuto(sajuData).recommendedMethod;
+  const methodList = Object.keys(methods) as YongSinMethod[];
+
+  const ranking = ALL_ELEMENTS.map((element) => {
+    const favorableIn: YongSinMethod[] = [];
+    const unfavorableIn: YongSinMethod[] = [];
+    let score = 0;
+    for (const m of methodList) {
+      const r = methods[m];
+      const weight =
+        r.primaryYongSin === element ? 2
+          : r.secondaryYongSin === element || r.xiSin.includes(element) ? 1
+            : r.jiSin.includes(element) || r.chouSin.includes(element) ? -1
+              : 0;
+      if (weight > 0) favorableIn.push(m);
+      if (weight < 0) unfavorableIn.push(m);
+      score += weight * r.confidence;
+    }
+    return { element, score: Math.round(score * 100) / 100, favorableIn, unfavorableIn };
+  }).sort((a, b) => b.score - a.score);
+
+  const agreedFavorable: WuXing[] = [];
+  const agreedUnfavorable: WuXing[] = [];
+  const conflicting: WuXing[] = [];
+  const neutral: WuXing[] = [];
+  for (const r of ranking) {
+    if (r.favorableIn.length > 0 && r.unfavorableIn.length > 0) conflicting.push(r.element);
+    else if (r.favorableIn.length > 0) agreedFavorable.push(r.element);
+    else if (r.unfavorableIn.length > 0) agreedUnfavorable.push(r.element);
+    else neutral.push(r.element);
+  }
+
+  return { methods, recommendedMethod, agreedFavorable, agreedUnfavorable, conflicting, neutral, ranking };
 }

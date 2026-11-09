@@ -59,3 +59,19 @@ score = 50 + 십이신(길 +20 / 흉 -10) + 28수(길 +15 / 흉 -10) + 육합 +2
 
 - 일운은 "이 사람에게" 유리한 날인지, 일진은 "이 날이" 행사(택일)에 적합한지를 본다
 - 같은 날 일운 ×, 일진 길일이 동시에 나올 수 있다
+
+## 4. 용신 합의 요약 (analyze_saju yongsin → `consensus`)
+
+4개 방법(strength/seasonal/mediation/disease)을 모두 실행해 오행별로 분류한다.
+
+| 필드 | 정의 |
+|------|------|
+| agreedFavorable | 1개 이상 방법에서 유리(용신·보조용신·희신), 불리 판정 없음 |
+| agreedUnfavorable | 1개 이상 방법에서 불리(기신·구신), 유리 판정 없음 |
+| conflicting | 방법 간 유리/불리 엇갈림 |
+| neutral | 판정 없음 |
+| ranking | Σ confidence × (용신 +2, 보조용신·희신 +1, 기신·구신 -1) 내림차순 |
+| recommendedMethod | 적합도(calculateApplicability) 최고 방법 |
+
+- 방법 내부 무모순 보장: 같은 방법에서 유리로 판정된 오행은 기신·구신 목록에서 제거 (`selector.ts` normalizeResult)
+- 일운 점수(B5)와 `sajuData.yongSin`은 strength 계열 결과를 쓴다. consensus는 참고 정보이며 점수에 반영되지 않는다
