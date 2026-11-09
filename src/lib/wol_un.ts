@@ -3,11 +3,14 @@
  * 월별 운세 분석 - 매달의 천간지지와 그에 따른 운세
  */
 
-import type { SajuData, HeavenlyStem, EarthlyBranch, WuXing } from '../types/index.js';
+import type { SajuData, HeavenlyStem, EarthlyBranch, WuXing, SolarTerm } from '../types/index.js';
 import { getHeavenlyStemByIndex } from '../data/heavenly_stems.js';
-import { getEarthlyBranchByIndex } from '../data/earthly_branches.js';
+import { getEarthlyBranchByIndex, SAM_HAP } from '../data/earthly_branches.js';
 import { analyzeElementInteraction } from '../data/wuxing.js';
-import { SOLAR_TERMS } from '../data/solar_terms.js';
+import { getSolarTermsForYear } from '../data/solar_terms.js';
+import { SIX_HARMONY, EARTHLY_CONFLICTS } from './constants.js';
+import { getDayPillar } from './helpers.js';
+import { formatInTimeZone } from 'date-fns-tz';
 
 /**
  * 월운(月運) 한 달 정보
@@ -20,7 +23,10 @@ export interface WolUnMonth {
   stemElement: WuXing;
   branchElement: WuXing;
   ganjiName: string; // 간지명 (예: "을축월")
-  solarTerm: string; // 해당 월의 절기
+  solarTerm: string; // 해당 양력 월에 드는 절(節) — 이 시각부터 ganjiName 월건
+  termStart: string; // 절입 일시 (KST, YYYY-MM-DD HH:mm)
+  termEnd: string; // 다음 절입 일시 (KST, YYYY-MM-DD HH:mm)
+  beforeTermGanjiName: string; // 해당 양력 월 1일 ~ 절입 전의 월건
   interaction: {
     withDayMaster: string; // 일간과의 관계
     withYongSin: string; // 용신과의 관계
@@ -34,8 +40,8 @@ export interface WolUnMonth {
     love: string; // 연애운
   };
   advice: string[]; // 조언
-  luckyDays?: number[]; // 길일 (1-31)
-  cautionDays?: number[]; // 주의일 (1-31)
+  luckyDays?: number[]; // 길일 (1-31): 일진 지지가 원국 일지와 육합·삼합
+  cautionDays?: number[]; // 주의일 (1-31): 일진 지지가 원국 일지와 충
 }
 
 /**
@@ -90,26 +96,59 @@ function getMonthStem(yearStem: HeavenlyStem, monthBranch: EarthlyBranch): Heave
   ] as HeavenlyStem;
 }
 
+/** 양력 월별로 드는 절(節) — 1월 소한 ~ 12월 대설 */
+const JIE_BY_GREGORIAN_MONTH: SolarTerm[] = [
+  '소한', '입춘', '경칩', '청명', '입하', '망종',
+  '소서', '입추', '백로', '한로', '입동', '대설',
+];
+
+const STEMS: HeavenlyStem[] = ['갑', '을', '병', '정', '무', '기', '경', '신', '임', '계'];
+const BRANCHES: EarthlyBranch[] = ['자', '축', '인', '묘', '진', '사', '오', '미', '신', '유', '술', '해'];
+
+function findJieDateTime(year: number, month: number): string {
+  const term = JIE_BY_GREGORIAN_MONTH[month - 1]!;
+  const found = getSolarTermsForYear(year).find((t) => t.term === term);
+  if (!found) {
+    throw new Error(`${year}년 ${term} 절기 데이터를 찾을 수 없습니다. 지원 범위: 1900-2200년`);
+  }
+  return formatInTimeZone(new Date(found.timestamp), 'Asia/Seoul', 'yyyy-MM-dd HH:mm');
+}
+
 /**
- * 특정 년월의 간지 계산
+ * 특정 양력 년월의 간지 계산
+ * 양력 M월 → 그 달에 드는 절(節) 이후의 월건 (2월 입춘=인월 … 12월 대설=자월, 1월 소한=축월)
+ * yearStem은 targetYear의 세운 천간. 1월(축월)은 입춘 전이므로 전년도 천간으로 월간을 정한다.
  */
 function getMonthGanJi(
+  year: number,
   month: number,
   yearStem: HeavenlyStem
-): { stem: HeavenlyStem; branch: EarthlyBranch; solarTerm: string } {
-  // 절기 기준으로 월지 결정
-  // 간단화: 양력 월을 기준으로 근사치 사용
-  const solarTermIndex = month - 1;
-  const monthBranch = MONTH_BRANCHES[solarTermIndex % 12]!;
-  const monthStem = getMonthStem(yearStem, monthBranch);
+): {
+  stem: HeavenlyStem;
+  branch: EarthlyBranch;
+  solarTerm: string;
+  termStart: string;
+  termEnd: string;
+  beforeTermGanjiName: string;
+} {
+  const monthBranch = MONTH_BRANCHES[(month + 10) % 12]!;
+  const effectiveYearStem =
+    month === 1 ? STEMS[(STEMS.indexOf(yearStem) + 9) % 10]! : yearStem;
+  const monthStem = getMonthStem(effectiveYearStem, monthBranch);
 
-  // 해당 월의 대표 절기
-  const solarTermName = SOLAR_TERMS[solarTermIndex * 2]!.name; // 월초 절기 이름
+  const prevStem = STEMS[(STEMS.indexOf(monthStem) + 9) % 10]!;
+  const prevBranch = BRANCHES[(BRANCHES.indexOf(monthBranch) + 11) % 12]!;
+
+  const nextYear = month === 12 ? year + 1 : year;
+  const nextMonth = month === 12 ? 1 : month + 1;
 
   return {
     stem: monthStem,
     branch: monthBranch,
-    solarTerm: solarTermName,
+    solarTerm: JIE_BY_GREGORIAN_MONTH[month - 1]!,
+    termStart: findJieDateTime(year, month),
+    termEnd: findJieDateTime(nextYear, nextMonth),
+    beforeTermGanjiName: `${prevStem}${prevBranch}월`,
   };
 }
 
@@ -122,7 +161,7 @@ export function analyzeWolUn(
   targetMonth: number,
   yearStem: HeavenlyStem
 ): WolUnMonth {
-  const monthGanJi = getMonthGanJi(targetMonth, yearStem);
+  const monthGanJi = getMonthGanJi(targetYear, targetMonth, yearStem);
 
   const stemData = getHeavenlyStemByIndex(
     ['갑', '을', '병', '정', '무', '기', '경', '신', '임', '계'].indexOf(monthGanJi.stem)
@@ -166,7 +205,7 @@ export function analyzeWolUn(
   // 길일/주의일 계산 (간단 버전)
   const { luckyDays, cautionDays } = calculateLuckyCautionDays(
     sajuData,
-    monthGanJi.branch,
+    targetYear,
     targetMonth
   );
 
@@ -179,6 +218,9 @@ export function analyzeWolUn(
     branchElement: branchData.element,
     ganjiName: `${monthGanJi.stem}${monthGanJi.branch}월`,
     solarTerm: monthGanJi.solarTerm,
+    termStart: monthGanJi.termStart,
+    termEnd: monthGanJi.termEnd,
+    beforeTermGanjiName: monthGanJi.beforeTermGanjiName,
     interaction: {
       withDayMaster: dayMasterInteraction,
       withYongSin: yongSinInteraction,
@@ -262,24 +304,32 @@ function generateMonthAdvice(
 
 /**
  * 길일/주의일 계산
+ * 해당 양력 월의 각 날짜 일진 지지를 원국 일지와 비교
+ * - 길일: 육합 또는 같은 삼합국 구성 지지
+ * - 주의일: 충
  */
 function calculateLuckyCautionDays(
-  _sajuData: SajuData,
-  _monthBranch: EarthlyBranch,
-  _month: number
+  sajuData: SajuData,
+  year: number,
+  month: number
 ): { luckyDays: number[]; cautionDays: number[] } {
-  // 간단한 계산 (실제로는 일간지를 모두 계산해야 함)
+  const natal = sajuData.day.branch;
+  const samHapGroup =
+    Object.values(SAM_HAP).find((g) => g.branches.includes(natal))?.branches ?? [];
+  const luckyBranches = new Set<EarthlyBranch>([
+    SIX_HARMONY[natal],
+    ...samHapGroup.filter((b) => b !== natal),
+  ]);
+  const cautionBranch = EARTHLY_CONFLICTS[natal];
+
   const luckyDays: number[] = [];
   const cautionDays: number[] = [];
+  const daysInMonth = new Date(year, month, 0).getDate();
 
-  // 길일: 5일마다
-  for (let day = 5; day <= 30; day += 5) {
-    luckyDays.push(day);
-  }
-
-  // 주의일: 7의 배수
-  for (let day = 7; day <= 28; day += 7) {
-    cautionDays.push(day);
+  for (let day = 1; day <= daysInMonth; day++) {
+    const { branch } = getDayPillar(new Date(year, month - 1, day));
+    if (luckyBranches.has(branch)) luckyDays.push(day);
+    if (branch === cautionBranch) cautionDays.push(day);
   }
 
   return { luckyDays, cautionDays };
@@ -299,15 +349,16 @@ export function getMultipleWolUn(
 
   let currentYear = startYear;
   let currentMonth = startMonth;
+  let currentYearStem = yearStem;
 
   for (let i = 0; i < months; i++) {
-    results.push(analyzeWolUn(sajuData, currentYear, currentMonth, yearStem));
+    results.push(analyzeWolUn(sajuData, currentYear, currentMonth, currentYearStem));
 
     currentMonth++;
     if (currentMonth > 12) {
       currentMonth = 1;
       currentYear++;
-      // 년간도 변경해야 하지만 간단화를 위해 생략
+      currentYearStem = STEMS[(STEMS.indexOf(currentYearStem) + 1) % 10]!;
     }
   }
 

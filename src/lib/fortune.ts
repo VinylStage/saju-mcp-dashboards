@@ -4,8 +4,13 @@
 
 import type { SajuData, FortuneAnalysis, FortuneAnalysisType, DailyFortune, WuXing } from '../types/index.js';
 import { WUXING_DATA, analyzeWuXingBalance } from '../data/wuxing.js';
-import { interpretAllTenGods } from './ten_gods.js';
+import { interpretAllTenGods, calculateTenGod } from './ten_gods.js';
 import { interpretBySinSal } from './sin_sal.js';
+import { getDayPillar } from './helpers.js';
+import { HEAVENLY_STEMS, EARTHLY_BRANCHES } from './constants.js';
+import { getHeavenlyStemByIndex } from '../data/heavenly_stems.js';
+import { getEarthlyBranchByIndex } from '../data/earthly_branches.js';
+import { analyzeRelationWithSaju } from './iljin_analysis.js';
 
 /**
  * 사주를 기반으로 운세 분석
@@ -626,62 +631,93 @@ function analyzeLoveFortune(
   };
 }
 
-/**
- * 날짜 기반 시드 생성 함수
- */
-function generateDateSeed(date: Date, sajuData: SajuData): number {
-  const dateStr = date.toISOString().split('T')[0] || '';
-  const sajuStr = `${sajuData.day.stem}${sajuData.day.branch}`;
-  const combinedStr = dateStr + sajuStr;
+const ELEMENT_DESTROYS: Record<WuXing, WuXing> = { 목: '토', 화: '금', 토: '수', 금: '목', 수: '화' };
 
-  // 문자열을 숫자 시드로 변환
-  let seed = 0;
-  for (let i = 0; i < combinedStr.length; i++) {
-    const char = combinedStr[i];
-    if (char) {
-      seed = (seed * 31 + char.charCodeAt(0)) % 100000;
-    }
-  }
-  return seed;
-}
+/** 일운 점수 가중치 — 근거: docs/exec-plans/completed/2026-11-09-fortune-maintenance.md */
+const DAILY_WEIGHTS = {
+  base: 60,
+  stem: { yongSin: 10, huiSin: 6, giSin: -8 },
+  branch: { yongSin: 6, huiSin: 4, giSin: -5 },
+  relation: { 육합: 4, 충: -8, 형: -5, 복음: -3 },
+} as const;
 
-/**
- * 시드 기반 난수 생성 (0-1 사이 값)
- */
-function seededRandom(seed: number): number {
-  const x = Math.sin(seed) * 10000;
-  return x - Math.floor(x);
+function clampLuck(v: number): number {
+  return Math.round(Math.min(100, Math.max(30, v)));
 }
 
 /**
  * 일일 운세 생성
+ * 총운 = base + 일진 천간·지지 오행(용신/희신/기신) + 원국 4지지 관계
+ * 하위 항목 = 총운 + 일진 천간 십성 보정
  */
 export function getDailyFortune(sajuData: SajuData, date: string): DailyFortune {
-  const targetDate = new Date(date);
-  const seed = generateDateSeed(targetDate, sajuData);
-  const dayElement = sajuData.day.stemElement;
+  const [y, m, d] = date.split('-').map((v) => parseInt(v, 10));
+  const ilJin = getDayPillar(new Date(y!, m! - 1, d!));
+  const ilJinStemElement = getHeavenlyStemByIndex(HEAVENLY_STEMS.indexOf(ilJin.stem)).element;
+  const ilJinBranchElement = getEarthlyBranchByIndex(EARTHLY_BRANCHES.indexOf(ilJin.branch)).element;
+  const yongSin = sajuData.yongSin?.primaryYongSin ?? sajuData.day.stemElement;
+  const huiSin = sajuData.yongSin?.secondaryYongSin;
+  const giSin = new Set<WuXing>(
+    (Object.keys(ELEMENT_DESTROYS) as WuXing[]).filter(
+      (e) => ELEMENT_DESTROYS[e] === yongSin || (huiSin !== undefined && ELEMENT_DESTROYS[e] === huiSin)
+    )
+  );
 
-  // 날짜 기반 운세 변동
-  const dateNumber = targetDate.getDate();
-  const monthNumber = targetDate.getMonth() + 1;
-
-  const variance = ((dateNumber + monthNumber) % 20) - 10; // -10 ~ +10
-
-  // 시드 기반 변동 (-10 ~ +10)
-  const getVariance = (offset: number) => {
-    return (seededRandom(seed + offset) - 0.5) * 20;
+  const items: string[] = [];
+  const elementScore = (el: WuXing, w: { yongSin: number; huiSin: number; giSin: number }, label: string) => {
+    if (el === yongSin) { items.push(`${label} ${el} 용신 +${w.yongSin}`); return w.yongSin; }
+    if (el === huiSin) { items.push(`${label} ${el} 희신 +${w.huiSin}`); return w.huiSin; }
+    if (giSin.has(el)) { items.push(`${label} ${el} 기신 ${w.giSin}`); return w.giSin; }
+    return 0;
   };
+  const stemElement = elementScore(ilJinStemElement, DAILY_WEIGHTS.stem, '천간');
+  const branchElement = elementScore(ilJinBranchElement, DAILY_WEIGHTS.branch, '지지');
+
+  const relation = analyzeRelationWithSaju(ilJin.stem, ilJin.branch, sajuData);
+  let relations = 0;
+  for (const r of relation.relations) {
+    const w = DAILY_WEIGHTS.relation[r.type];
+    relations += w;
+    items.push(`${r.pillar} ${r.natalBranch}-${ilJin.branch} ${r.type} ${w}`);
+  }
+
+  const overall = DAILY_WEIGHTS.base + stemElement + branchElement + relations;
+
+  const tenGod = calculateTenGod(sajuData.day.stem, ilJin.stem);
+  const isWealth = tenGod === '편재' || tenGod === '정재';
+  const isOfficer = tenGod === '편관' || tenGod === '정관';
+  const isResource = tenGod === '편인' || tenGod === '정인';
+  const isOutput = tenGod === '식신' || tenGod === '상관';
+  const isPeer = tenGod === '비견' || tenGod === '겁재';
+  const clashOrPunish = relation.relations.filter((r) => r.type === '충' || r.type === '형').length;
+  const harmonies = relation.relations.filter((r) => r.type === '육합').length;
+  const spouseClash = relation.relations.some((r) => r.pillar === 'day' && r.type === '충');
+  const spouseStar = sajuData.gender === 'male' ? isWealth : isOfficer;
+
+  const wealth = overall + (isWealth ? 8 : isOutput ? 4 : isPeer ? -6 : 0);
+  const career = overall + (isOfficer ? 8 : isResource ? 4 : tenGod === '상관' ? -6 : 0);
+  const health = overall + (isResource ? 4 : 0) - clashOrPunish * 4;
+  const love = overall + (spouseStar ? 8 : 0) + harmonies * 4 - (spouseClash ? 6 : 0);
 
   return {
     date,
-    overallLuck: Math.round(Math.min(100, Math.max(30, 70 + variance))),
-    wealthLuck: Math.round(Math.min(100, Math.max(30, 65 + variance + getVariance(1)))),
-    careerLuck: Math.round(Math.min(100, Math.max(30, 75 + variance + getVariance(2)))),
-    healthLuck: Math.round(Math.min(100, Math.max(30, 70 + variance + getVariance(3)))),
-    loveLuck: Math.round(Math.min(100, Math.max(30, 68 + variance + getVariance(4)))),
-    luckyColor: WUXING_DATA[dayElement].color[0]!,
-    luckyDirection: WUXING_DATA[dayElement].direction,
-    advice: `오늘은 ${dayElement} 기운이 강한 날입니다. ${WUXING_DATA[dayElement].personality[0]}하게 행동하세요.`,
+    overallLuck: clampLuck(overall),
+    wealthLuck: clampLuck(wealth),
+    careerLuck: clampLuck(career),
+    healthLuck: clampLuck(health),
+    loveLuck: clampLuck(love),
+    luckyColor: WUXING_DATA[yongSin].color[0]!,
+    luckyDirection: WUXING_DATA[yongSin].direction,
+    advice: `오늘 일진은 ${ilJin.stem}${ilJin.branch}(${ilJinStemElement})일입니다. 용신 ${yongSin} 기운(${WUXING_DATA[yongSin].color[0]}, ${WUXING_DATA[yongSin].direction}쪽)을 보강하세요.`,
+    scoreBreakdown: {
+      ilJin: `${ilJin.stem}${ilJin.branch}`,
+      tenGod,
+      base: DAILY_WEIGHTS.base,
+      stemElement,
+      branchElement,
+      relations,
+      items,
+    },
   };
 }
 
