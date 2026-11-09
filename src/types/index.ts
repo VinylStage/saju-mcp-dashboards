@@ -75,7 +75,9 @@ export interface BirthOptions {
 // 사주팔자 전체 데이터
 export interface SajuData {
   // 기본 정보
-  birthDate: string; // YYYY-MM-DD
+  birthDate: string; // YYYY-MM-DD (입력 원본, 음력 입력이면 음력)
+  /** 양력 환산 출생일 (YYYY-MM-DD). 대운 기산·만 나이 계산용 */
+  solarBirthDate: string;
   birthTime: string; // HH:MM
   /** 경도 보정에 사용한 시군구명 (longitude_table 키). 미입력 시 서울 */
   birthCity: string;

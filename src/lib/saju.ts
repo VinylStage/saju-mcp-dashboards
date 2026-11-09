@@ -117,6 +117,7 @@ export function calculateSaju(
 
   const sajuData: SajuData = {
     birthDate,
+    solarBirthDate: solarDate,
     birthTime,
     birthCity: resolvedBirthCity,
     calendar,
