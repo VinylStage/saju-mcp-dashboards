@@ -68,6 +68,7 @@
 
 사주 도구 호출 전 사용자에게 반드시 확인:
 이름, 양력/음력, 생년월일시(YYYY-MM-DD HH:mm), 성별, 출생지(시군구)
+단, `manage_settings set_profile`로 저장한 프로필이 있으면 재확인 생략 (출생 정보 생략 시 프로필 사용)
 
 > 상세: [docs/references/interpretation-guide.md](docs/references/interpretation-guide.md)
 
